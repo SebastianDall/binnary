@@ -4,26 +4,8 @@
 library(optparse)
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(seqinr, quietly = TRUE))
+library(binnairy)
 
-# Install the here package if not already installed
-if (!requireNamespace("here", quietly = TRUE)) {
-  install.packages("here")
-}
-
-# Use the here package
-library(here)
-
-# Construct the path
-setup_path <- here("subprojects", "3.methylation_calling", "tools","binnairy" ,"R", "setup.R")
-
-# Source the setup.R file
-source(setup_path)
-
-common_path <- here("subprojects", "3.methylation_calling", "tools","binnairy" ,"R", "common.R")
-source(common_path)
-
-contamination_path <- here("subprojects", "3.methylation_calling", "tools","binnairy" ,"R", "bin_contamination.R")
-source(contamination_path)
 
 # Define the options
 option_list <- list(
@@ -112,7 +94,7 @@ belonging_score <- calculate_belonging_score(
 )
 
 
-multi_contamination <- assign_contamination_from_kmer(
+multi_contamination <- calculate_contamination_dist_from_kmer(
   belonging_score = belonging_score,
   fasta = assembly_file,
   contig_bins = contig_bins,
@@ -133,13 +115,24 @@ multi_contamination_bins <- contamination_df %>%
   filter(group == "multi_contamination") %>% 
   select(!matching_bins) %>% 
   distinct(contig, .keep_all = TRUE) %>% 
-  left_join(multi_contamination)
+  left_join(multi_contamination) %>% 
+  filter(!is.na(matching_bins))
   
-
+multi_contamination_unbins <- contamination_df %>% 
+  filter(group == "multi_contamination", current_bin == "unbinned") %>% 
+  group_by(contig, current_bin, group) %>% 
+  summarise(
+    matching_bins = paste(matching_bins, collapse = ";"), .groups = "drop"
+  )
 
 contig_bins_output <- contamination_df %>% 
   filter(group != "multi_contamination") %>% 
-  bind_rows(multi_contamination_bins)
+  bind_rows(multi_contamination_bins) %>% 
+  bind_rows(multi_contamination_unbins) %>% 
+  select(!group)
+
+print(paste0("Writing output to: ", arguments$out))
+write_delim(contig_bins_output, arguments$out, delim = "\t")
 
 
 

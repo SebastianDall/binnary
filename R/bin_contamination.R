@@ -37,6 +37,18 @@ extract_kmer_dist <- function(dist_matrix) {
 }
 
 
+calculate_kmer_frequency <- function(df, fasta, kmer_window) {
+  df <- df %>% 
+    mutate(
+      contig_seq = map(.x = contig, ~fasta[[paste0(.x)]]),
+      kmer_count = map(.x = contig_seq, ~(as.data.frame(seqinr::count(.x, wordsize = kmer_window)) %>% pivot_wider(names_from = Var1, values_from = Freq)))
+    ) %>% 
+    unnest(kmer_count) %>% 
+    select(!contig_seq)
+}
+
+
+
 # TODO: Implement logic if no contigs could be assigned to multiple bins
 
 assign_contamination_from_kmer <- function(
@@ -47,14 +59,15 @@ assign_contamination_from_kmer <- function(
 ) {
   print("Calculating Bin kmer frequency")
   kmer_bin_df <- contig_bins %>% 
-    mutate(
-      contig_seq = map(.x = contig, ~fasta[[paste0(.x)]]),
-      kmer_count = map(.x = contig_seq, ~(as.data.frame(seqinr::count(.x, wordsize = kmer_window)) %>% pivot_wider(names_from = Var1, values_from = Freq)))
-    ) %>% 
-    unnest(kmer_count) %>% 
-    select(!contig_seq)
+    calculate_kmer_frequency(fasta, kmer_window)
+    # mutate(
+    #   contig_seq = map(.x = contig, ~fasta[[paste0(.x)]]),
+    #   kmer_count = map(.x = contig_seq, ~(as.data.frame(seqinr::count(.x, wordsize = kmer_window)) %>% pivot_wider(names_from = Var1, values_from = Freq)))
+    # ) %>% 
+    # unnest(kmer_count) %>% 
+    # select(!contig_seq)
   
-  
+  # Remove unbinned contigs as kmer frequency does not make sense.
   contamination_multi <- belonging_score %>% 
     filter(!str_detect(bin_compare, "unbinned")) %>% 
     determine_contamination() %>% 
@@ -66,8 +79,9 @@ assign_contamination_from_kmer <- function(
     print("No contigs could be assigned to multiple bins")
     return(tibble(contig = c(), matching_bins = c()))
   }
-  
+  print("Calculating contig kmer frequency")
   kmer_contig_df <- tibble(contig = contamination_multi %>% pull(contig) %>% unique()) %>% 
+    # calculate_kmer_frequency(fasta)
     left_join(kmer_bin_df) %>%
     select(!bin)
   
@@ -76,7 +90,6 @@ assign_contamination_from_kmer <- function(
   cat("Calculating kmer distance to bins\n")
   contig_bins_out_tmp <- contamination_multi %>% 
     ungroup() %>% 
-    # filter(contig %in% c("contig_1453", "contig_178")) %>%
     mutate(
       # Extract kmer bins, where contig could belong (remove contig if found in bin)
       bin_kmer = map2(

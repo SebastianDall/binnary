@@ -127,17 +127,6 @@ calculate_belonging_score <- function(
 }
 
 
-# motifs_scored_in_bins_corrected <- readxl::read_excel("./tools/binnairy/data/test_data.xlsx")
-
-
-
-
-
-# WINDOW_SIZE = 4
-
-######################################
-
-
 
 
 
