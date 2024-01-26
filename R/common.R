@@ -12,11 +12,28 @@ convert_to_binary <- function(df, MEAN_METHYLATION_CUTOFF){
 }
 
 
-# Suppressing both messages and warnings
-quiet_read_tsv <- function(file_path) {
-  suppressWarnings(
-    suppressMessages(
-      read_tsv(file_path, progress = FALSE)
-    )
-  )
+find_bins_w_no_methylation <- function(df, bin_motif_binary){
+  no_methylation_bin_present <- bin_motif_binary %>% 
+    group_by(bin) %>% 
+    summarise(
+      sum_methylation = sum(methylation_binary, na.rm = TRUE), .groups = "drop"
+    ) %>% 
+    filter(sum_methylation == 0)
+  
+  if (length(no_methylation_bin_present$bin) == 0) {
+    bin_contigs_w_0_or_NA_only <- df %>% 
+      group_by(bin) %>% 
+      summarise(
+        sum_methylation = sum(methylation_binary, na.rm = TRUE), .groups = "drop"
+      ) %>% 
+      filter(sum_methylation == 0)
+    
+    df <- df %>% 
+      filter(!bin %in% bin_contigs_w_0_or_NA_only$bin)
+    
+    return(df)
+    
+  } else {
+    return(df)
+  }
 }

@@ -70,7 +70,9 @@ calculate_belonging_score <- function(
     rename(bin = bin_contig) %>% 
     # Add NA values
     pivot_wider(names_from = motif_mod, values_from = methylation_binary) %>% 
-    pivot_longer(-bin, names_to = "motif_mod", values_to = "methylation_binary")
+    pivot_longer(-bin, names_to = "motif_mod", values_to = "methylation_binary") %>% 
+    # If there is no bin with no methylation pattern, then remove contigs with no methylation pattern
+    find_bins_w_no_methylation(bin_motif_binary)
   
   
   # Compute scoring metrics:
@@ -85,20 +87,22 @@ calculate_belonging_score <- function(
       relationship = "many-to-many"
     ) %>%
     mutate(
-      motif_comparison = methylation_binary == methylation_binary_compare,
-      motif_exists_where = case_when(
-        methylation_binary == methylation_binary_compare ~ "both",
-        methylation_binary == 1 & methylation_binary_compare == 0 ~ "bin",
-        methylation_binary == 0 & methylation_binary_compare == 1 ~ "other",
-        methylation_binary == 0 & methylation_binary_compare == 0 ~ "neither",
-        methylation_binary == 1 & is.na(methylation_binary_compare) ~ "unknown"
-      ),
+      # motif_comparison = methylation_binary == methylation_binary_compare,
+      # motif_exists_where = case_when(
+      #   methylation_binary == methylation_binary_compare ~ "both",
+      #   methylation_binary == 1 & methylation_binary_compare == 0 ~ "bin",
+      #   methylation_binary == 0 & methylation_binary_compare == 1 ~ "other",
+      #   methylation_binary == 0 & methylation_binary_compare == 0 ~ "neither",
+      #   methylation_binary == 1 & is.na(methylation_binary_compare) ~ "unknown",
+      #   methylation_binary == 0 & is.na(methylation_binary_compare) ~ "unknown"
+      # ),
       motif_comparison_score = case_when(
         methylation_binary == 1 & methylation_binary_compare == 1 ~ 1,    # Methylation on both contig and bin +1
         methylation_binary == 1 & methylation_binary_compare == 0 ~ -1,   # Methylation missing on contig -1
         methylation_binary == 0 & methylation_binary_compare == 1 ~ 0,    # Methylation only found on contig 0 (can be due to noise)
         methylation_binary == 0 & methylation_binary_compare == 0 ~ 0,    # Methylation missing on both contig and bin 0
-        methylation_binary == 1 & is.na(methylation_binary_compare) ~ 0   # Methylation missing on contig due to NA 0 (No penalty means benefit of the doubt)
+        methylation_binary == 1 & is.na(methylation_binary_compare) ~ 0,   # Methylation missing on contig due to NA 0 (No penalty means benefit of the doubt)
+        methylation_binary == 0 & is.na(methylation_binary_compare) ~ 0   # Methylation missing on contig due to NA 0 (No penalty means benefit of the doubt)
       )
     )
   
@@ -107,7 +111,7 @@ calculate_belonging_score <- function(
   belonging_score <- motif_binary_compare %>% 
     # Summarize the scores
     group_by(bin, bin_compare) %>% 
-    summarise(n = sum(motif_comparison_score)) %>%
+    summarise(n = sum(motif_comparison_score), .groups = "drop") %>%
     # Find the max per bin_compare
     group_by(bin_compare) %>%
     filter(n == max(n)) %>%
@@ -117,14 +121,7 @@ calculate_belonging_score <- function(
       contig = paste0("contig_", contig_number),
       length = as.numeric(length)
     ) %>% 
-    select(!contig_number) # %>%
-  # mutate(
-  #   group = case_when(
-  #     bin == bin_id & belonging_bins == 1 ~ "correct",
-  #     bin != bin_id & belonging_bins == 1 ~ "single_contamination",
-  #     belonging_bins > 1 ~ "multi_contamination"
-  #   )
-  # )
+    select(!contig_number)
   
   return(belonging_score)
 }

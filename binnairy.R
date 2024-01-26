@@ -3,7 +3,7 @@
 # Load required libraries
 library(optparse)
 suppressPackageStartupMessages(library(tidyverse))
-# source("./R/setup.R")
+suppressPackageStartupMessages(library(seqinr, quietly = TRUE))
 
 # Install the here package if not already installed
 if (!requireNamespace("here", quietly = TRUE)) {
@@ -12,9 +12,6 @@ if (!requireNamespace("here", quietly = TRUE)) {
 
 # Use the here package
 library(here)
-# Now here() will always point to your project's top-level directory
-
-here()
 
 # Construct the path
 setup_path <- here("subprojects", "3.methylation_calling", "tools","binnairy" ,"R", "setup.R")
@@ -25,9 +22,12 @@ source(setup_path)
 common_path <- here("subprojects", "3.methylation_calling", "tools","binnairy" ,"R", "common.R")
 source(common_path)
 
+contamination_path <- here("subprojects", "3.methylation_calling", "tools","binnairy" ,"R", "bin_contamination.R")
+source(contamination_path)
+
 # Define the options
 option_list <- list(
-  make_option(c("--mode"), type = "character", default = NULL, help = "Either unbinned or contamination", metavar = "MODE"),
+  # make_option(c("--mode"), type = "character", default = NULL, help = "Either unbinned or contamination", metavar = "MODE"),
   # make_option(c("--motifs"), type = "character", default = NULL, help = "Path to motifs.tsv file", metavar = "FILE"),
   make_option(c("--motifs_scored"), type = "character", default = NULL, help = "Path to motifs-scored.tsv file", metavar = "FILE"),
   make_option(c("--bin_motifs"), type = "character", default = NULL, help = "Path to bin-motifs.tsv file", metavar = "FILE"),
@@ -36,7 +36,9 @@ option_list <- list(
   make_option(c("--assembly_stats"), type = "character", default = NULL, help = "Path to assembly_info.txt file", metavar = "FILE"),
   make_option(c("--assembly_file"), type = "character", default = NULL, help = "Path to assembly.fasta file", metavar = "FILE"),
   make_option(c("--mean_methylation_cutoff"), type = "double", default = 0.25, help = "Cutoff value for considering a motif as methylated", metavar = "FLOAT"),
-  make_option(c("--n_motif_cutoff"), type = "integer", default = 6, help = "Number of motifs observed before considering a motif valid", metavar = "INTEGER")
+  make_option(c("--n_motif_cutoff"), type = "integer", default = 6, help = "Number of motifs observed before considering a motif valid", metavar = "INTEGER"),
+  make_option(c("--kmer_window_size"), type = "integer", default = 4, help = "kmer window size", metavar = "INTEGER"),
+  make_option(c("--out"), type = "character", default = "contig-bin-association.tsv", help = "Path to filename", metavar = "PATH")
 )
 
 # Create a parser
@@ -45,31 +47,36 @@ parser <- OptionParser(option_list = option_list)
 # Parse the arguments
 arguments <- parse_args(parser)
 
-# Check mode
-if (!is.null(arguments$mode)) {
-  mode <- arguments$mode
-  
-  if (!mode %in% c("contamination", "unbinned")) {
-    stop(paste0("Mode should be either 'unbinned' or 'contamination', got '", mode, "'"), call. = FALSE)
-  }
-}
+# # Check mode
+# if (!is.null(arguments$mode)) {
+#   mode <- arguments$mode
+#   
+#   if (!mode %in% c("contamination", "unbinned")) {
+#     stop(paste0("Mode should be either 'unbinned' or 'contamination', got '", mode, "'"), call. = FALSE)
+#   }
+# }
 
 
 # Read and process the files based on the provided arguments
-if (!is.null(arguments$motifs)) {
-  motifs <- read_tsv(arguments$motifs)
+# if (!is.null(arguments$motifs)) {
+#   motifs <- read_tsv(arguments$motifs)
+# }
+if (!is.null(arguments$out)) {
+  
 }
 
+
+
 if (!is.null(arguments$motifs_scored)) {
-  motifs_scored <- read_tsv(arguments$motifs_scored)
+  motifs_scored <- read_tsv(arguments$motifs_scored, show_col_types = FALSE)
 }
 
 if (!is.null(arguments$bin_motifs)) {
-  bin_motifs <- read_tsv(arguments$bin_motifs) 
+  bin_motifs <- read_tsv(arguments$bin_motifs, show_col_types = FALSE) 
 }
 
 if (!is.null(arguments$contig_bins)) {
-  contig_bins <- read_tsv(arguments$contig_bins, col_names = c("contig", "bin")) 
+  contig_bins <- read_tsv(arguments$contig_bins, col_names = c("contig", "bin"), show_col_types = FALSE)
 }
 
 # if (!is.null(arguments$bin_stats)) {
@@ -78,12 +85,14 @@ if (!is.null(arguments$contig_bins)) {
 # }
 
 if (!is.null(arguments$assembly_stats)) {
-  assembly_stats <- read_tsv(arguments$assembly_stats) %>%
+  assembly_stats <- read_tsv(arguments$assembly_stats, show_col_types = FALSE) %>%
     rename(contig = `#seq_name`)
 }
 
 if (!is.null(arguments$assembly_file)) {
+  cat("Loading Assembly File")
   assembly_file <- seqinr::read.fasta(arguments$assembly_file, seqtype = "DNA")
+  cat("\n")
 }
 
 # Add further processing or output here
@@ -103,17 +112,35 @@ belonging_score <- calculate_belonging_score(
 )
 
 
+multi_contamination <- assign_contamination_from_kmer(
+  belonging_score = belonging_score,
+  fasta = assembly_file,
+  contig_bins = contig_bins,
+  kmer_window = arguments$kmer_window_size
+)
 
 
+contamination_df <- belonging_score %>% 
+  ungroup() %>% 
+  determine_contamination() %>% 
+  select(bin,contig,bin_id,group) %>% 
+  rename(
+    matching_bins = bin,
+    current_bin = bin_id
+  )
 
-# if (mode == "unbinned") {
-#   # run_unbinned(
-#   #   # # motifs,
-#   #   # motifs_scored,
-#   #   # bins_motifs,
-#   #   # contig_bins
-#   # )
-# }
+multi_contamination_bins <- contamination_df %>% 
+  filter(group == "multi_contamination") %>% 
+  select(!matching_bins) %>% 
+  distinct(contig, .keep_all = TRUE) %>% 
+  left_join(multi_contamination)
+  
+
+
+contig_bins_output <- contamination_df %>% 
+  filter(group != "multi_contamination") %>% 
+  bind_rows(multi_contamination_bins)
+
 
 
 
