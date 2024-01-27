@@ -1,27 +1,36 @@
 #!/bin/env python3
 
 import argparse
-import pandas as pd
+from src import data_processing, analysis, utilities
+from src.cli_parser import get_parser
 # Import other necessary libraries here
 
 def main(args):
-    # Placeholder for your logic to handle the files and analysis
-    print("hello Binnary")
-    pass
+    """
+    Main entry point for the DNA Methylation Pattern Analysis tool.
+    Orchestrates the workflow of the tool based on the provided arguments.
+    """
+    print("Starting Binnary Analysis...")
+
+    # Step 1: Load and preprocess data
+    # These functions would be defined in your data_processing module
+    motifs_scored = data_processing.load_motifs(args.motifs_scored)
+    bin_motifs = data_processing.load_bin_motifs(args.bin_motifs)
+    contig_bins = data_processing.load_contig_bins(args.contig_bins)
+    assembly_stats = data_processing.load_assembly_stats(args.assembly_stats)
+    assembly_file = data_processing.load_assembly_file(args.assembly_file)
+
+    # Step 2: Perform core analysis
+    # Functions from the analysis module
+    analysis_results = analysis.perform_analysis(motifs_scored, bin_motifs, contig_bins, assembly_stats, assembly_file, args)
+
+    # Step 3: Post-analysis processing and output generation
+    # This could involve filtering results, summarizing findings, and generating output files
+    data_processing.generate_output(analysis_results, args.out)
+
+    print("Analysis Completed. Results are saved to:", args.out)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="DNA Methylation Pattern Analysis")
-
-    # Adding command-line options
-    parser.add_argument("--motifs_scored", type=str, help="Path to motifs-scored.tsv file")
-    parser.add_argument("--bin_motifs", type=str, help="Path to bin-motifs.tsv file")
-    parser.add_argument("--contig_bins", type=str, help="Path to bins.tsv file for contig bins")
-    parser.add_argument("--assembly_stats", type=str, help="Path to assembly_info.txt file")
-    parser.add_argument("--assembly_file", type=str, help="Path to assembly.fasta file")
-    parser.add_argument("--mean_methylation_cutoff", type=float, default=0.25, help="Cutoff value for considering a motif as methylated")
-    parser.add_argument("--n_motif_cutoff", type=int, default=6, help="Number of motifs observed before considering a motif valid")
-    parser.add_argument("--kmer_window_size", type=int, default=4, help="kmer window size")
-    parser.add_argument("--out", type=str, default="contig-bin-association.tsv", help="Path to output filename")
-
-    args = parser.parse_args()
+    parser = get_parser()  # Get the configured argument parser
+    args = parser.parse_args()  # Parse the command-line arguments
     main(args)
