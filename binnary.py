@@ -1,6 +1,5 @@
 #!/bin/env python3
 
-import argparse
 from src import data_processing, analysis, utilities
 from src.cli_parser import get_parser
 # Import other necessary libraries here
@@ -14,12 +13,8 @@ def main(args):
 
     # Step 1: Load and preprocess data
     # These functions would be defined in your data_processing module
-    motifs_scored = data_processing.load_motifs(args.motifs_scored)
-    bin_motifs = data_processing.load_bin_motifs(args.bin_motifs)
-    contig_bins = data_processing.load_contig_bins(args.contig_bins)
-    assembly_stats = data_processing.load_assembly_stats(args.assembly_stats)
-    assembly_file = data_processing.load_assembly_file(args.assembly_file)
-
+    (motifs_scored, bin_motifs, contig_bins, assembly_stats, assembly_file) = data_processing.load_data(args)
+    
     # Step 2: Perform core analysis
     # Functions from the analysis module
     analysis_results = analysis.perform_analysis(motifs_scored, bin_motifs, contig_bins, assembly_stats, assembly_file, args)
