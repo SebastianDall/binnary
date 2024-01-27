@@ -18,10 +18,10 @@ def main(args):
     # Step 2: Perform core analysis
     # Functions from the analysis module
     analysis_results = analysis.perform_analysis(motifs_scored, bin_motifs, contig_bins, assembly_stats, assembly_file, args)
-
+    print(analysis_results)
     # Step 3: Post-analysis processing and output generation
     # This could involve filtering results, summarizing findings, and generating output files
-    data_processing.generate_output(analysis_results, args.out)
+    # data_processing.generate_output(analysis_results, args.out)
 
     print("Analysis Completed. Results are saved to:", args.out)
 
