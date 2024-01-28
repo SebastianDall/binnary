@@ -1,5 +1,8 @@
 import pandas as pd
 import numpy as np
+import itertools
+from Bio import SeqIO
+
 from .data_processing import prepare_motifs_scored_in_bins
 
 
@@ -13,8 +16,13 @@ def perform_analysis(motifs_scored, bin_motifs, contig_bins, assembly_stats, ass
     # Calculate belonging score
     belonging_score = calculate_belonging_score(motifs_scored_in_bins, args)
     
+    # Determine contamination
+    belonging_score = determine_contamination(belonging_score)
     
-    return belonging_score
+    # Calculate kmer distance for contigs that can belong to multuple bins
+    contamination_kmer_distance = calculate_contamination_kmer_distance(belonging_score, assembly_file, contig_bins, args)
+    
+    return contamination_kmer_distance
 
 
 
@@ -89,16 +97,7 @@ def calculate_belonging_score(motifs_scored_in_bins, args):
     
     
     # Calculate belonging score
-    # ## Sum motif_comparison_score by bin and bin_compare
-    # belonging_score = motif_binary_compare.groupby(["bin","bin_compare"])["motif_comparison_score"].sum().reset_index(name="belonging_score")
-    # ## Retain the highest belonging score for each bin_compare (contig)
-    # belonging_score = belonging_score.groupby("bin_compare")["belonging_score"].max().reset_index(name="belonging_score")
-    # print(belonging_score)
-    
-    # ## Add belonging_bins column
-    # belonging_score["belonging_bins"] = belonging_score.groupby("bin_compare")["bin_compare"].transform("count")
-    
-    # Calculate the sum of motif_comparison_score for each combination of bin and bin_compare
+    ## Calculate the sum of motif_comparison_score for each combination of bin and bin_compare
     belonging_score = motif_binary_compare.groupby(["bin", "bin_compare"])["motif_comparison_score"].sum().reset_index(name="belonging_score")
     
     # Find the max belonging_score for each bin_compare
@@ -115,6 +114,111 @@ def calculate_belonging_score(motifs_scored_in_bins, args):
     # Drop the max_belonging_score column as it's redundant now
     belonging_score_final = belonging_score_with_max.drop(columns=["max_belonging_score"])
 
+    separated_columns = belonging_score_final['bin_compare'].str.split('_', expand=True)
+    belonging_score_final[['bin_id', 'contig', 'contig_number', 'length']] = separated_columns
+
+    # Step 2: Modify 'contig' column
+    belonging_score_final['contig'] = 'contig_' + belonging_score_final['contig_number']
+
+    # Step 3: Convert 'length' column to numeric
+    belonging_score_final['length'] = pd.to_numeric(belonging_score_final['length'])
+
+    # Step 4: Remove 'contig_number' column
+    belonging_score_final.drop(columns=['contig_number'], inplace=True)
+    
+    
     return belonging_score_final
 
+
+def determine_contamination(belonging_score):
+    """
+    Determines whether a contig is contaminated based on belonging_score.
+    """
+    # Define the conditions
+    conditions = [
+        (belonging_score["bin"] == belonging_score["bin_id"]) & (belonging_score["belonging_bins"] == 1),
+        (belonging_score["bin"] != belonging_score["bin_id"]) & (belonging_score["belonging_bins"] == 1),
+        (belonging_score["belonging_bins"] > 1)
+    ]
+
+    # Define the corresponding choices for each condition
+    choices = [
+        "correct", # pattern between bin and contig matches and there is only one best match 
+        "single_contamination", # contig pattern does not match bin pattern and there is only one best match
+        "multiple_contamination" # contig pattern does not match bin pattern and there are multiple best matches
+    ]
+
+    belonging_score["contamination_group"] = np.select(conditions, choices, default=np.nan)
+    
+    return belonging_score
+    
+
+
+def calculate_contamination_kmer_distance(belonging_score, assembly_file, contig_bins, args):
+    """
+    Calculates the kmer distance between contigs and bins that they belong to.
+    """
+    # Find contigs that matches multiple bins based on methylation pattern
+    contigs_in_bins_matching_multiple_bins = belonging_score[(belonging_score["contamination_group"] == "multiple_contamination") & (belonging_score["bin_id"] != "unbinned")]["contig"].unique()
+    
+    for contig in contigs_in_bins_matching_multiple_bins:
+        # Find matching bins
+        matching_bins = belonging_score[belonging_score["contig"] == contig]["bin"].unique()
+
+        # Generate kmer_df
+        kmers = generate_kmers(args.kmer_window_size)
+        kmer_df = pd.DataFrame(index=kmers)
+        
+        # count kmer for each matching bin
+        for bin in matching_bins:
+            # Initialize a Series to hold summed k-mer counts for the bin
+            bin_kmer_counts = pd.Series(0, index=kmers)
+            
+            # Get contigs in bin
+            contigs_in_bin = contig_bins[contig_bins["bin"] == bin]["contig"].unique()
+            
+            # remove contig of interest from contigs_in_bin
+            contigs_in_bin = contigs_in_bin[contigs_in_bin != contig]
+            
+            # calculate kmer frequency for each contig in bin from the assembly_file dictionary
+            for contig_in_bin in contigs_in_bin:
+                # Get contig sequence
+                contig_sequence = assembly_file.get(contig_in_bin, "")
+                # Count kmer for contig
+                contig_kmer_counts = count_kmers(contig_sequence, args.kmer_window_size)
+                # Add contig_kmer_counts to bin_kmer_counts
+                bin_kmer_counts += pd.Series(contig_kmer_counts).reindex(bin_kmer_counts.index, fill_value=0)
+            
+            # Add summed k-mer counts for the bin to the DataFrame
+            kmer_df[bin] = bin_kmer_counts
+            
+        # Count k-mer for contig of interest
+        contig_sequence = assembly_file.get(contig, "")
+        contig_kmer_counts = count_kmers(contig_sequence, args.kmer_window_size)
+        kmer_df[contig] = pd.Series(contig_kmer_counts).reindex(kmer_df.index, fill_value=0)
+        
+        # Convert to kmer frequency
+        total_kmer_counts = kmer_df.sum(axis=0)
+        kmer_df = kmer_df.div(total_kmer_counts, axis=1)
+            
+    return kmer_df
+
+
+
+
+
+
+
+def generate_kmers(k, alphabet='ATCG'):
+    """Generate all possible k-mers from the given alphabet."""
+    return [''.join(p) for p in itertools.product(alphabet, repeat=k)]
+
+def count_kmers(sequence, k):
+    """Count k-mers in a given sequence."""
+    kmer_counts = {kmer: 0 for kmer in generate_kmers(k)}
+    for i in range(len(sequence) - k + 1):
+        kmer = str(sequence[i:i+k])
+        if kmer in kmer_counts:  # This check ensures we only count valid k-mers
+            kmer_counts[kmer] += 1
+    return kmer_counts
 
