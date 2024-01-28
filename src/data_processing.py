@@ -14,7 +14,8 @@ def load_data(args):
     
     print("Loading assembly file...")
     assembly_file = read_fasta(args.assembly_file)
-
+    print("Assembly file loaded.")
+    
     # Perform any additional preprocessing steps here
     # Change colnames of contig_bins
     contig_bins.columns = ["contig", "bin"]
