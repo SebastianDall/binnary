@@ -11,6 +11,7 @@ def load_data(args):
     contig_bins = pd.read_csv(args.contig_bins, delimiter = "\t", header = None)
     assembly_stats = pd.read_csv(args.assembly_stats, delimiter = "\t")
     
+    
     print("Loading assembly file...")
     assembly_file = read_fasta(args.assembly_file)
 
@@ -42,8 +43,8 @@ def prepare_motifs_scored_in_bins(motifs_scored, bin_motifs, contig_bins, assemb
     motifs_scored_in_bins = motifs_scored[motifs_scored["motif_mod"].isin(motifs_in_bins)]
     
     # Merge with contig_bins and assembly_stats
-    motifs_scored_in_bins = motifs_scored_in_bins.merge(contig_bins, on="contig")
-    motifs_scored_in_bins = motifs_scored_in_bins.merge(assembly_stats[["contig", "length"]], on="contig")
+    motifs_scored_in_bins = motifs_scored_in_bins.merge(contig_bins, on="contig", how="left")
+    motifs_scored_in_bins = motifs_scored_in_bins.merge(assembly_stats[["contig", "length"]], on="contig", how="left")
     
     # Handle NA bins as 'unbinned'
     motifs_scored_in_bins["bin"] = motifs_scored_in_bins["bin"].fillna("unbinned")
