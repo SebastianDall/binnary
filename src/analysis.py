@@ -21,7 +21,6 @@ def perform_analysis(motifs_scored, bin_motifs, contig_bins, assembly_stats, ass
     
     # Calculate kmer distance for contigs that can belong to multuple bins
     contamination_kmer_distance_dict = calculate_contamination_kmer_distance(belonging_score, assembly_file, contig_bins, args)
-    print(contamination_kmer_distance_dict)
     # Initialize a list to hold your formatted data
     formatted_data = []
 
