@@ -30,6 +30,15 @@ def read_fasta(file_path):
     return {record.id: str(record.seq) for record in SeqIO.parse(file_path, "fasta")}
 
 
+
+def generate_output(output_df, output_path):
+    """
+    Generate the output files for the analysis.
+    """
+    # Generate the output files
+    output_df.to_csv(output_path, sep="\t", index=False)
+
+
 def prepare_motifs_scored_in_bins(motifs_scored, bin_motifs, contig_bins, assembly_stats):
     """
     Prepares the motifs_scored_in_bins DataFrame by merging with bin motifs, contig bins, and assembly stats,
