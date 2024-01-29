@@ -32,5 +32,17 @@ python3 binnary.py --motifs_scored data/motifs-scored.tsv \
 This should produce the following output:
 
 ```bash
-
+matching_bins	contig	current_bin
+b1	contig_10	b1
+b1	contig_1	b1
+b1	contig_2	b1
+b1	contig_3	b1
+b2	contig_4	b2
+b2	contig_5	b2
+b3	contig_7	b3
+b3	contig_8	b3
+b3	contig_9	b3
+b4	contig_16	b4
+b1:0.05074253606808246|b3:0.05144902395625766	contig_11	b1
+b1|b3	contig_15	unbinned
 ```
