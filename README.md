@@ -1,10 +1,11 @@
 # binnairy
-Binary methylation pattern binning
 
+Binary methylation pattern binning
 
 ## Install
 
 ### Conda Environment
+
 In the devcontainer, run the following commands to create a conda environment with the required dependencies:
 
 ```bash
@@ -13,8 +14,12 @@ micromamba activate nanomotif
 #python -m pip install nanomotif
 ```
 
-
 ## Test with mock data
+
+Test data was made by hand and the mock assembly file with the script in `src/utilities/assembly_file_creator.py`.
+
+To run a test, run the following command:
+
 ```bash
 python3 binnary.py --motifs_scored data/motifs-scored.tsv \
     --bin_motifs data/bin-motifs.tsv \
@@ -22,4 +27,10 @@ python3 binnary.py --motifs_scored data/motifs-scored.tsv \
     --assembly_stats data/assembly_info.txt \
     --assembly_file data/assembly_file.fasta \
     --out output.tsv
+```
+
+This should produce the following output:
+
+```bash
+
 ```
