@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import itertools
-from Bio import SeqIO
+from scipy.spatial.distance import euclidean
 
 from .data_processing import prepare_motifs_scored_in_bins
 
@@ -20,9 +20,49 @@ def perform_analysis(motifs_scored, bin_motifs, contig_bins, assembly_stats, ass
     belonging_score = determine_contamination(belonging_score)
     
     # Calculate kmer distance for contigs that can belong to multuple bins
-    contamination_kmer_distance = calculate_contamination_kmer_distance(belonging_score, assembly_file, contig_bins, args)
+    contamination_kmer_distance_dict = calculate_contamination_kmer_distance(belonging_score, assembly_file, contig_bins, args)
+    print(contamination_kmer_distance_dict)
+    # Initialize a list to hold your formatted data
+    formatted_data = []
+
+    # Iterate over the dictionary to format the string
+    for contig, bins in contamination_kmer_distance_dict.items():
+        # Format the bin distances into a single string
+        matching_bins = '|'.join([f"{bin}:{distance}" for bin, distance in bins.items()])
+        # Append the contig and the formatted string to your data list
+        formatted_data.append([contig, matching_bins])
+
+    # Create a DataFrame from the formatted data
+    contamination_kmer_distance_df = pd.DataFrame(formatted_data, columns=['contig', 'matching_bins'])
+
     
-    return contamination_kmer_distance
+    # Dataframe for output
+    output_df = belonging_score[["bin", "contig", "bin_id", "contamination_group"]]\
+        .rename(columns={"bin": "matching_bins", "bin_id": "current_bin"})
+    
+    ## Merge contamination_df with contamination_kmer_distance
+    contamination_matching_multiple_bins = output_df[
+        (output_df["contamination_group"] == "multiple_contamination") & (output_df["current_bin"] != "unbinned")
+    ].drop(columns=["matching_bins"])\
+    .drop_duplicates(subset='contig')\
+    .merge(contamination_kmer_distance_df, on="contig", how="left")\
+    .dropna()
+    
+    ## 
+    unbinned_matching_multiple_bins = output_df[
+        (output_df["contamination_group"] == "multiple_contamination") & (output_df["current_bin"] == "unbinned")
+    ]
+    unbinned_matching_multiple_bins = unbinned_matching_multiple_bins.groupby('contig')['matching_bins'].apply(lambda x: '|'.join(x)).reset_index()
+    unbinned_matching_multiple_bins.rename(columns={'matching_bins': 'matching_bins'}, inplace=True)
+    unbinned_matching_multiple_bins["current_bin"] = "unbinned"
+    
+    correct_assignment_df = output_df[output_df["contamination_group"] == "correct"]
+    
+    ## Concat all dataframes
+    output_final = pd.concat([correct_assignment_df, contamination_matching_multiple_bins, unbinned_matching_multiple_bins])\
+        .drop(columns=["contamination_group"])
+    
+    return output_final
 
 
 
@@ -158,10 +198,16 @@ def calculate_contamination_kmer_distance(belonging_score, assembly_file, contig
     """
     Calculates the kmer distance between contigs and bins that they belong to.
     """
+    # Intialize a distance dictionary
+    distances = {}
+    
     # Find contigs that matches multiple bins based on methylation pattern
     contigs_in_bins_matching_multiple_bins = belonging_score[(belonging_score["contamination_group"] == "multiple_contamination") & (belonging_score["bin_id"] != "unbinned")]["contig"].unique()
     
     for contig in contigs_in_bins_matching_multiple_bins:
+        # Initialize a dictionary for this contig's distances
+        contig_distances = {}
+        
         # Find matching bins
         matching_bins = belonging_score[belonging_score["contig"] == contig]["bin"].unique()
 
@@ -200,12 +246,20 @@ def calculate_contamination_kmer_distance(belonging_score, assembly_file, contig
         # Convert to kmer frequency
         total_kmer_counts = kmer_df.sum(axis=0)
         kmer_df = kmer_df.div(total_kmer_counts, axis=1)
-            
-    return kmer_df
-
-
-
-
+        
+        # Calculate distance between contig column and each bin column
+        # Iterate over columns in the DataFrame
+        for col in kmer_df.columns:
+            if col != contig:  # Skip the contig column itself
+                # Calculate the distance between the contig column and the current bin column
+                distance = euclidean(kmer_df[contig], kmer_df[col])
+                # Store the distance in the dictionary
+                contig_distances[col] = distance
+        
+        # After processing all bins, store the contig's distances in the main dictionary
+        distances[contig] = contig_distances
+        
+    return distances
 
 
 
