@@ -129,7 +129,7 @@ def calculate_belonging_score(motifs_scored_in_bins, args):
     ]
 
     # Define the corresponding choices for each condition
-    choices = [1, -1, 0, 0, 0, 0]
+    choices = [1, -1, -1, 0, 0, 0]
 
     # Use numpy.select to apply these conditions and choices
     motif_binary_compare['motif_comparison_score'] = np.select(conditions, choices, default=np.nan)
