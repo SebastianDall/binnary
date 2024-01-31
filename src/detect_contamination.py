@@ -45,7 +45,7 @@ def detect_contamination(
     )
     
     # # Remove contigs with no methylated motifs
-    # contig_motif_binary = contig_motif_binary[contig_motif_binary.groupby("bin")["methylation_binary"].transform("sum") > 0]
+    contig_motif_binary = contig_motif_binary[contig_motif_binary.groupby("bin")["methylation_binary"].transform("sum") > 0]
 
     
     # Combine bin_motif_binary and contig_motif_binary
@@ -71,8 +71,8 @@ def detect_contamination(
     # Define the corresponding choices for each condition
     choices = [
         0,      # bin motif is methylated, contig motif is methylated
-        -1,     # bin motif is methylated, contig motif is not methylated
-        -1,     # bin motif is not methylated, contig motif is methylated
+        1,     # bin motif is methylated, contig motif is not methylated
+        1,     # bin motif is not methylated, contig motif is methylated
         0,      # bin motif is not methylated, contig motif is not methylated
         0,      # bin motif is methylated, contig motif is not observed
         0       # bin motif is not methylated, contig motif is not observed
@@ -81,17 +81,30 @@ def detect_contamination(
     # Use numpy.select to apply these conditions and choices
     motif_binary_compare['motif_comparison_score'] = np.select(conditions, choices, default=np.nan)
     
+    
+    
+    
     # sum motif_comparison_score by bin
-    contig_bin_comparison_score = motif_binary_compare.groupby(['bin', 'bin_compare'])['motif_comparison_score'].sum().reset_index(name='contig_bin_comparison_score')
+    contig_bin_comparison_score = motif_binary_compare.groupby(['bin', 'bin_compare'])['motif_comparison_score'].sum().reset_index(name='binary_methylation_missmatch_score')
+    # Split bin_compare into bin and contig
+    contig_bin_comparison_score[['contig_bin', 'contig', 'contig_number', 'length']] = contig_bin_comparison_score['bin_compare'].str.split('_', expand=True)
+    contig_bin_comparison_score["contig"] = contig_bin_comparison_score["contig"] + "_" + contig_bin_comparison_score["contig_number"]
+    contig_bin_comparison_score = contig_bin_comparison_score.drop(columns=["contig_number"])
+    
+    print(contig_bin_comparison_score)
+    
+    # Filter contig_bin == bin and contig_bin_comparison_score > 0
+    contamination_contigs = contig_bin_comparison_score[(contig_bin_comparison_score["bin"] == contig_bin_comparison_score["contig_bin"]) & (contig_bin_comparison_score["binary_methylation_missmatch_score"] > 0)]
     
     # Only keep highest score for each contig per bin
-    idx = contig_bin_comparison_score.groupby(['bin_compare'])['contig_bin_comparison_score'].idxmax()
+    idx = contig_bin_comparison_score.groupby(['bin_compare'])['binary_methylation_missmatch_score'].idxmin()
 
     # Filter the DataFrame to keep only the rows with the highest score for each 'bin_compare'
     contig_bin_comparison_highest_score = contig_bin_comparison_score.loc[idx].reset_index(drop=True).sort_values('bin')
 
+    # 
     
-    print(contig_bin_comparison_highest_score)
+    # print(contig_bin_comparison_highest_score)
     
     
     
