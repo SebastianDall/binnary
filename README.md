@@ -21,7 +21,7 @@ Test data was made by hand and the mock assembly file with the script in `src/ut
 To run a test, run the following command:
 
 ```bash
-python3 binnary.py --motifs_scored data/motifs-scored.tsv \
+./binnary.py detect_contamination --motifs_scored data/motifs-scored.tsv \
     --bin_motifs data/bin-motifs.tsv \
     --contig_bins data/bins.tsv \
     --assembly_stats data/assembly_info.txt \
