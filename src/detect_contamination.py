@@ -91,21 +91,22 @@ def detect_contamination(
     contig_bin_comparison_score["contig"] = contig_bin_comparison_score["contig"] + "_" + contig_bin_comparison_score["contig_number"]
     contig_bin_comparison_score = contig_bin_comparison_score.drop(columns=["contig_number"])
     
-    print(contig_bin_comparison_score)
     
     # Filter contig_bin == bin and contig_bin_comparison_score > 0
     contamination_contigs = contig_bin_comparison_score[(contig_bin_comparison_score["bin"] == contig_bin_comparison_score["contig_bin"]) & (contig_bin_comparison_score["binary_methylation_missmatch_score"] > 0)]
+    print(contamination_contigs)
     
-    # Only keep highest score for each contig per bin
-    idx = contig_bin_comparison_score.groupby(['bin_compare'])['binary_methylation_missmatch_score'].idxmin()
-
-    # Filter the DataFrame to keep only the rows with the highest score for each 'bin_compare'
-    contig_bin_comparison_highest_score = contig_bin_comparison_score.loc[idx].reset_index(drop=True).sort_values('bin')
-
-    # 
+    # TODO: Find alternative bin for contamination contigs where binary_methylation_missmatch_score != 0
     
-    # print(contig_bin_comparison_highest_score)
+    # Find alternative bin for contamination contigs
+    ## Must have a perfect match
+    contamination_contigs_alternative_bin = contig_bin_comparison_score[(contig_bin_comparison_score["bin"] != contig_bin_comparison_score["contig_bin"]) & (contig_bin_comparison_score["binary_methylation_missmatch_score"] == 0)]
+    contamination_contigs_alternative_bin = contamination_contigs_alternative_bin[["contig", "bin", "binary_methylation_missmatch_score"]]\
+        .rename(columns={"bin": "alternative_bin", "binary_methylation_missmatch_score": "alternative_bin_binary_methylation_missmatch_score"})
     
+    contamination_contigs = pd.merge(contamination_contigs, contamination_contigs_alternative_bin, on="contig")
+    
+    return contamination_contigs
     
     
     
