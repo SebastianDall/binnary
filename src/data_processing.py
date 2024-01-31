@@ -45,7 +45,6 @@ def prepare_motifs_scored_in_bins(motifs_scored, bin_motifs, contig_bins, assemb
     and calculates additional metrics like number of motifs and mean methylation per contig.
     """
     # Create find bin motifs
-    bin_motifs["motif_mod"] = bin_motifs["motif"] + "_" + bin_motifs["mod_type"]
     motifs_in_bins = bin_motifs["motif_mod"].unique()
     
     # Filter and enhance motifs_scored based on motifs_in_bins
@@ -65,5 +64,14 @@ def prepare_motifs_scored_in_bins(motifs_scored, bin_motifs, contig_bins, assemb
     # Calculate n_motifs and mean methylation
     motifs_scored_in_bins["n_motifs"] = motifs_scored_in_bins["n_mod"] + motifs_scored_in_bins["n_nomod"]
     motifs_scored_in_bins["mean"] = motifs_scored_in_bins["n_mod"] / motifs_scored_in_bins["n_motifs"]
+    
+    
+    # Remove complement columns:
+    # Identify columns that contain the word "complement"
+    complement_columns = [col for col in motifs_scored_in_bins.columns if 'complement' in col]
+
+    # Drop these columns from the DataFrame
+    motifs_scored_in_bins = motifs_scored_in_bins.drop(columns=complement_columns)
+
     
     return motifs_scored_in_bins
