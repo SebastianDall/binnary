@@ -11,7 +11,7 @@ def detect_contamination(motifs_scored_in_bins, bin_motifs, args):
         .mean()
         .reset_index(name="mean_methylation")
     )
-
+    print(bin_motif_binary)
     ## Step 2: Convert mean methylation values to binary
     bin_motif_binary["methylation_binary"] = (
         bin_motif_binary["mean_methylation"] >= args.mean_methylation_cutoff
@@ -53,13 +53,13 @@ def detect_contamination(motifs_scored_in_bins, bin_motifs, args):
 
     ## Remove contigs with no methylated motifs
     ### Fill na == 0 before
-    contig_motif_binary["methylation_binary"] = contig_motif_binary[
-        "methylation_binary"
-    ].fillna(0)
+    # contig_motif_binary["methylation_binary"] = contig_motif_binary[
+    #     "methylation_binary"
+    # ].fillna(0)
 
-    contig_motif_binary = contig_motif_binary[
-        contig_motif_binary.groupby("bin")["methylation_binary"].transform("sum") > 0
-    ]
+    # contig_motif_binary = contig_motif_binary[
+    #     contig_motif_binary.groupby("bin")["methylation_binary"].transform("sum") > 0
+    # ]
 
     # Combine bin_motif_binary and contig_motif_binary
     contig_motif_binary = contig_motif_binary.rename(
@@ -68,6 +68,8 @@ def detect_contamination(motifs_scored_in_bins, bin_motifs, args):
             "methylation_binary": "methylation_binary_compare",
         }
     )
+    contig_motif_binary.to_csv("contig_motif_binary.csv")
+
     motif_binary_compare = pd.merge(
         bin_motif_binary, contig_motif_binary, on="motif_mod"
     )
@@ -103,6 +105,9 @@ def detect_contamination(motifs_scored_in_bins, bin_motifs, args):
     motif_binary_compare["motif_comparison_score"] = np.select(
         conditions, choices, default=np.nan
     )
+    print(motif_binary_compare)
+
+    motif_binary_compare.to_csv("motif_binary_compare.csv")
 
     # sum motif_comparison_score by bin
     contig_bin_comparison_score = (
@@ -132,6 +137,7 @@ def detect_contamination(motifs_scored_in_bins, bin_motifs, args):
         & (contig_bin_comparison_score["binary_methylation_missmatch_score"] > 0)
     ]
     print(contamination_contigs)
+    contamination_contigs.to_csv("contamination_contigs.csv")
 
     # TODO: Find alternative bin for contamination contigs where binary_methylation_missmatch_score != 0
 
