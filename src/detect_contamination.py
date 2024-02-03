@@ -11,7 +11,7 @@ def detect_contamination(motifs_scored_in_bins, bin_motifs, args):
         .mean()
         .reset_index(name="mean_methylation")
     )
-    print(bin_motif_binary)
+    
     ## Step 2: Convert mean methylation values to binary
     bin_motif_binary["methylation_binary"] = (
         bin_motif_binary["mean_methylation"] >= args.mean_methylation_cutoff
@@ -105,10 +105,7 @@ def detect_contamination(motifs_scored_in_bins, bin_motifs, args):
     motif_binary_compare["motif_comparison_score"] = np.select(
         conditions, choices, default=np.nan
     )
-    print(motif_binary_compare)
-
-    motif_binary_compare.to_csv("motif_binary_compare.csv")
-
+    
     # sum motif_comparison_score by bin
     contig_bin_comparison_score = (
         motif_binary_compare.groupby(["bin", "bin_compare"])["motif_comparison_score"]
@@ -136,9 +133,7 @@ def detect_contamination(motifs_scored_in_bins, bin_motifs, args):
         )
         & (contig_bin_comparison_score["binary_methylation_missmatch_score"] > 0)
     ]
-    print(contamination_contigs)
-    contamination_contigs.to_csv("contamination_contigs.csv")
-
+    
     # TODO: Find alternative bin for contamination contigs where binary_methylation_missmatch_score != 0
 
     # Find alternative bin for contamination contigs
