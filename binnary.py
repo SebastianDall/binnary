@@ -20,7 +20,7 @@ def main(args):
         bin_motifs,
         contig_bins,
         assembly_stats,
-        assembly_file,
+        # assembly_file,
     ) = data_processing.load_data(args)
 
     # Alter bin_motifs to include motif_mod and mean
@@ -28,28 +28,21 @@ def main(args):
     # Calculate n_motifs and mean methylation
     bin_motifs["n_motifs"] = bin_motifs["n_mod_bin"] + bin_motifs["n_nomod_bin"]
     bin_motifs["mean"] = bin_motifs["n_mod_bin"] / bin_motifs["n_motifs"]
-    
-    
-    
+
     # Step 2: create motifs_scored_in_bins
     motifs_scored_in_bins = data_processing.prepare_motifs_scored_in_bins(
-        motifs_scored, bin_motifs, contig_bins, assembly_stats, 
+        motifs_scored,
+        bin_motifs,
+        contig_bins,
+        assembly_stats,
     )
-    
-    
+
     # Functions from the analysis module
     if args.command == "detect_contamination":
         analysis_results = detect_contamination.detect_contamination(
             motifs_scored_in_bins, bin_motifs, args
         )
-    
-    
-    
-    
-    
-    
-    
-    
+
     # analysis_results = analysis.perform_analysis(
     #     motifs_scored, bin_motifs, contig_bins, assembly_stats, assembly_file, args
     # )
