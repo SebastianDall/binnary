@@ -12,9 +12,9 @@ def load_data(args):
     assembly_stats = pd.read_csv(args.assembly_stats, delimiter = "\t")
     
     
-    print("Loading assembly file...")
-    assembly_file = read_fasta(args.assembly_file)
-    print("Assembly file loaded.")    
+    # print("Loading assembly file...")
+    # assembly_file = read_fasta(args.assembly_file)
+    # print("Assembly file loaded.")    
 
     # Perform any additional preprocessing steps here
     # Change colnames of contig_bins
@@ -23,7 +23,7 @@ def load_data(args):
     # Rename the first column to 'contig'
     assembly_stats.rename(columns={assembly_stats.columns[0]: "contig"}, inplace=True)
     
-    return motifs_scored, bin_motifs, contig_bins, assembly_stats, assembly_file
+    return motifs_scored, bin_motifs, contig_bins, assembly_stats
 
 
 def read_fasta(file_path):
