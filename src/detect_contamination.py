@@ -1,28 +1,30 @@
 import pandas as pd
 import numpy as np
+from src.data_processing import prepare_bin_motifs_binary
 
-
-def detect_contamination(motifs_scored_in_bins, bin_motifs, args):
-    """ """
-    # Create find bin motifs binary
-    ## Step 1: Group by bin and motif_mod and calculate mean methylation
-    bin_motif_binary = (
-        bin_motifs.groupby(["bin", "motif_mod"])["mean"]
-        .mean()
-        .reset_index(name="mean_methylation")
-    )
+def detect_contamination(motifs_scored_in_bins, bin_motif_binary, args):
+    """
+    Takes the bin_motif_binary and motifs_scored_in_bins DataFrames and performs the contamination detection analysis.
+    Firstly bin_motif_binary is used to create a binary representation of the methylation status of each motif in each bin.
+    This is the bases for the comparison. Only motifs that has a mean methylation value of at least 0.75 in bin_motif_binary are considered.
     
-    ## Step 2: Convert mean methylation values to binary
-    bin_motif_binary["methylation_binary"] = (
-        bin_motif_binary["mean_methylation"] >= args.mean_methylation_cutoff
-    ).astype(int)
-
+    Motifs_scored_in_bins is then used to create a binary representation of the methylation status of each motif in each contig.
+    This is then compared to the binary representation of the bin to identify any mismatches.
+    Only motifs that are observed more than 6 times are considered and must have a mean methylation value of at least 0.75-0.15.
+    
+    
+    params:
+        motifs_scored_in_bins: pd.DataFrame - DataFrame containing the motifs scored in each bin
+        bin_motif_binary: pd.DataFrame - DataFrame containing the binary representation of the methylation status of each motif in each bin
+        args: argparse.Namespace - Namespace containing the arguments passed to the script
+    
+    """
+    
     # Create contig motifs binary
     ## Filter motifs that are not in bin_motif_binary
     contig_motif_binary = motifs_scored_in_bins[
-        motifs_scored_in_bins["motif_mod"].isin(bin_motif_binary["motif_mod"])
+        motifs_scored_in_bins["motif_mod"].isin(bin_motif_binary["motif_mod"].unique())
     ]
-
     ## Filter motifs that are not observed more than n_motif_cutoff times
     contig_motif_binary = contig_motif_binary[
         contig_motif_binary["n_motifs"] >= args.n_motif_cutoff
@@ -30,7 +32,7 @@ def detect_contamination(motifs_scored_in_bins, bin_motifs, args):
 
     ## Convert mean methylation values to binary
     contig_motif_binary["methylation_binary"] = (
-        contig_motif_binary["mean"] >= args.mean_methylation_cutoff
+        contig_motif_binary["mean"] >= (args.mean_methylation_cutoff-0.15)
     ).astype(int)
 
     ## Remove unbinned contigs
@@ -42,25 +44,6 @@ def detect_contamination(motifs_scored_in_bins, bin_motifs, args):
     ]
     contig_motif_binary.rename(columns={"bin_contig": "bin"}, inplace=True)
 
-    # Pivot the DataFrame
-    contig_motif_binary_pivoted = contig_motif_binary.pivot_table(
-        index="bin", columns="motif_mod", values="methylation_binary", fill_value=None
-    )
-    # Unpivot the DataFrame back to long format
-    contig_motif_binary = contig_motif_binary_pivoted.reset_index().melt(
-        id_vars=["bin"], var_name="motif_mod", value_name="methylation_binary"
-    )
-
-    ## Remove contigs with no methylated motifs
-    ### Fill na == 0 before
-    # contig_motif_binary["methylation_binary"] = contig_motif_binary[
-    #     "methylation_binary"
-    # ].fillna(0)
-
-    # contig_motif_binary = contig_motif_binary[
-    #     contig_motif_binary.groupby("bin")["methylation_binary"].transform("sum") > 0
-    # ]
-
     # Combine bin_motif_binary and contig_motif_binary
     contig_motif_binary = contig_motif_binary.rename(
         columns={
@@ -68,12 +51,11 @@ def detect_contamination(motifs_scored_in_bins, bin_motifs, args):
             "methylation_binary": "methylation_binary_compare",
         }
     )
-    contig_motif_binary.to_csv("contig_motif_binary.csv")
-
+    
     motif_binary_compare = pd.merge(
         bin_motif_binary, contig_motif_binary, on="motif_mod"
     )
-
+    
     # match pattern between bin and contig
     # Define the conditions
     conditions = [
@@ -112,6 +94,9 @@ def detect_contamination(motifs_scored_in_bins, bin_motifs, args):
         .sum()
         .reset_index(name="binary_methylation_missmatch_score")
     )
+
+    
+    
     # Split bin_compare into bin and contig
     contig_bin_comparison_score[
         ["contig_bin", "contig", "contig_number", "length"]
