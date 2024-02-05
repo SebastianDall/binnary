@@ -8,7 +8,7 @@ class MockArgs:
         self.contig_bins = "data/bins.tsv"
         self.assembly_stats = "data/assembly_info.txt"
         # self.assembly_file = "data/assembly_file.fasta"
-        self.mean_methylation_cutoff = 0.5
+        self.mean_methylation_cutoff = 0.75
         self.n_motif_cutoff = 6
 
 @pytest.fixture(scope="session")
