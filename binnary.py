@@ -27,8 +27,8 @@ def main(args):
 
     # Step 2: create motifs_scored_in_bins and bin_motif_binary
     bin_motif_binary = data_processing.prepare_bin_motifs_binary(bin_motifs, args)
-    
-    
+    bin_motif_binary.to_csv("bin_motif_binary.csv", index=False)
+
     motifs_scored_in_bins = data_processing.prepare_motifs_scored_in_bins(
         motifs_scored,
         bin_motif_binary,
@@ -39,7 +39,7 @@ def main(args):
     # Functions from the analysis module
     if args.command == "detect_contamination":
         analysis_results = detect_contamination.detect_contamination(
-            motifs_scored_in_bins, bin_motifs, args
+            motifs_scored_in_bins, bin_motif_binary, args
         )
 
     # analysis_results = analysis.perform_analysis(
@@ -47,7 +47,7 @@ def main(args):
     # )
 
     # Step 3: Post-analysis processing and output generation
-    # data_processing.generate_output(analysis_results, args.out)
+    data_processing.generate_output(analysis_results, args.out)
     print("Analysis Completed. Results are saved to:", args.out)
 
 
