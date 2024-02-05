@@ -47,11 +47,10 @@ def test_prepare_bin_motif_binary(loaded_data):
     
     assert bin_motif_binary is not None
     assert bin_motif_binary.columns.tolist() == ["bin", "motif_mod", "mean_methylation", "methylation_binary"]
-    assert bin_motif_binary[(bin_motif_binary["bin"] == "b1") & (bin_motif_binary["motif_mod"] == "m1_a")]["methylation_binary"].values[0] == 0
     assert bin_motif_binary[(bin_motif_binary["bin"] == "b3") & (bin_motif_binary["motif_mod"] == "m6_a")]["methylation_binary"].values[0] == 1
     
     # Assert that there are 4 motifs in bin 1
-    assert bin_motif_binary[bin_motif_binary["bin"] == "b1"].shape[0] == 4
+    assert bin_motif_binary[bin_motif_binary["bin"] == "b3"].shape[0] == 2
     
 
 

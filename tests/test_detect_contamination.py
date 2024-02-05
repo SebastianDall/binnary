@@ -12,13 +12,14 @@ def test_detect_contamination(loaded_data, motifs_scored_in_bins_and_bin_motifs)
     
     contaminated_contigs = detect_contamination.detect_contamination(
         motifs_scored_in_bins_and_bin_motifs["motifs_scored_in_bins"],
-        motifs_scored_in_bins_and_bin_motifs["bin_motifs"],
+        motifs_scored_in_bins_and_bin_motifs["bin_motif_binary"],
         args
     )
-    
+    print("\n")
+    print(contaminated_contigs)
     assert contaminated_contigs is not None
-    assert contaminated_contigs["bin"].unique() == ["b3"]
-    assert contaminated_contigs["contig"].unique() == ["contig_6"]
-    assert contaminated_contigs["binary_methylation_missmatch_score"].unique() == [2.0]
-    assert contaminated_contigs["alternative_bin"].unique() == ["b2"]
+    assert contaminated_contigs["bin"].unique().tolist() == ["b3"]
+    assert sorted(contaminated_contigs["contig"].unique().tolist()) == ["contig_12", "contig_13", "contig_6"]
+    assert contaminated_contigs[contaminated_contigs["contig"] == "contig_6"]["binary_methylation_missmatch_score"].values[0] == 2.0
+    assert contaminated_contigs[contaminated_contigs["contig"] == "contig_6"]["alternative_bin"].unique() == ["b2"]
     
