@@ -39,13 +39,13 @@ def generate_output(output_df, output_path):
     output_df.to_csv(output_path, sep="\t", index=False)
 
 
-def prepare_motifs_scored_in_bins(motifs_scored, bin_motifs, contig_bins, assembly_stats):
+def prepare_motifs_scored_in_bins(motifs_scored, bin_motif_binary, contig_bins, assembly_stats):
     """
     Prepares the motifs_scored_in_bins DataFrame by merging with bin motifs, contig bins, and assembly stats,
     and calculates additional metrics like number of motifs and mean methylation per contig.
     """
     # Create find bin motifs
-    motifs_in_bins = bin_motifs["motif_mod"].unique()
+    motifs_in_bins = bin_motif_binary["motif_mod"].unique()
     
     # Filter and enhance motifs_scored based on motifs_in_bins
     motifs_scored["motif_mod"] = motifs_scored["motif"] + "_" + motifs_scored["mod_type"]
