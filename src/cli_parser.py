@@ -17,7 +17,7 @@ def add_common_arguments(subparser):
     subparser.add_argument(
         "--mean_methylation_cutoff",
         type=float,
-        default=0.50,
+        default=0.75,
         help="Cutoff value for considering a motif as methylated",
     )
     subparser.add_argument(
