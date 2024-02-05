@@ -34,6 +34,27 @@ def test_feature_with_loaded_data(loaded_data):
     # assert len(assembly_file) == 16
 
 
+
+def test_prepare_bin_motif_binary(loaded_data):
+    """
+    GIVEN loaded_data
+    WHEN prepare_bin_motifs_binary is called
+    THEN assert that the output contains only the expected columns
+    """
+    args = MockArgs()
+    
+    bin_motif_binary = data_processing.prepare_bin_motifs_binary(loaded_data["bin_motifs"], args)
+    
+    assert bin_motif_binary is not None
+    assert bin_motif_binary.columns.tolist() == ["bin", "motif_mod", "mean_methylation", "methylation_binary"]
+    assert bin_motif_binary[(bin_motif_binary["bin"] == "b1") & (bin_motif_binary["motif_mod"] == "m1_a")]["methylation_binary"].values[0] == 0
+    assert bin_motif_binary[(bin_motif_binary["bin"] == "b3") & (bin_motif_binary["motif_mod"] == "m6_a")]["methylation_binary"].values[0] == 1
+    
+    # Assert that there are 4 motifs in bin 1
+    assert bin_motif_binary[bin_motif_binary["bin"] == "b1"].shape[0] == 4
+    
+
+
 def test_motifs_scored_in_bins(loaded_data):
     # Access the loaded data directly if returned as a dictionary
     motifs_scored = loaded_data["motifs_scored"]
@@ -41,16 +62,14 @@ def test_motifs_scored_in_bins(loaded_data):
     contig_bins = loaded_data["contig_bins"]
     assembly_stats = loaded_data["assembly_stats"]
 
-    # Alter bin_motifs to include motif_mod and mean
-    bin_motifs["motif_mod"] = bin_motifs["motif"] + "_" + bin_motifs["mod_type"]
-    # Calculate n_motifs and mean methylation
-    bin_motifs["n_motifs"] = bin_motifs["n_mod_bin"] + bin_motifs["n_nomod_bin"]
-    bin_motifs["mean"] = bin_motifs["n_mod_bin"] / bin_motifs["n_motifs"]
+    # Step 1 create bin_motif_binary
+    args = MockArgs()
+    bin_motif_binary = data_processing.prepare_bin_motifs_binary(bin_motifs, args)
 
     # Step 2: create motifs_scored_in_bins
     motifs_scored_in_bins = data_processing.prepare_motifs_scored_in_bins(
         motifs_scored,
-        bin_motifs,
+        bin_motif_binary,
         contig_bins,
         assembly_stats,
     )
@@ -76,22 +95,3 @@ def test_motifs_scored_in_bins(loaded_data):
     )
 
 
-
-def test_prepare_bin_motif_binary(loaded_data):
-    """
-    GIVEN loaded_data
-    WHEN prepare_bin_motifs_binary is called
-    THEN assert that the output contains only the expected columns
-    """
-    args = MockArgs()
-    
-    bin_motif_binary = data_processing.prepare_bin_motifs_binary(loaded_data["bin_motifs"], args)
-    
-    assert bin_motif_binary is not None
-    assert bin_motif_binary.columns.tolist() == ["bin", "motif_mod", "mean_methylation", "methylation_binary"]
-    assert bin_motif_binary[(bin_motif_binary["bin"] == "b1") & (bin_motif_binary["motif_mod"] == "m1_a")]["methylation_binary"].values[0] == 0
-    assert bin_motif_binary[(bin_motif_binary["bin"] == "b3") & (bin_motif_binary["motif_mod"] == "m6_a")]["methylation_binary"].values[0] == 1
-    
-    # Assert that there are 4 motifs in bin 1
-    assert bin_motif_binary[bin_motif_binary["bin"] == "b1"].shape[0] == 4
-    
