@@ -23,16 +23,15 @@ def main(args):
         # assembly_file,
     ) = data_processing.load_data(args)
 
-    # Alter bin_motifs to include motif_mod and mean
-    bin_motifs["motif_mod"] = bin_motifs["motif"] + "_" + bin_motifs["mod_type"]
-    # Calculate n_motifs and mean methylation
-    bin_motifs["n_motifs"] = bin_motifs["n_mod_bin"] + bin_motifs["n_nomod_bin"]
-    bin_motifs["mean"] = bin_motifs["n_mod_bin"] / bin_motifs["n_motifs"]
+    
 
-    # Step 2: create motifs_scored_in_bins
+    # Step 2: create motifs_scored_in_bins and bin_motif_binary
+    bin_motif_binary = data_processing.prepare_bin_motifs_binary(bin_motifs, args)
+    
+    
     motifs_scored_in_bins = data_processing.prepare_motifs_scored_in_bins(
         motifs_scored,
-        bin_motifs,
+        bin_motif_binary,
         contig_bins,
         assembly_stats,
     )
