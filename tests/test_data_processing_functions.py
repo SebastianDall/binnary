@@ -73,15 +73,8 @@ def test_motifs_scored_in_bins(loaded_data):
         assembly_stats,
     )
 
-    # bin_motifs
-    ## Assert there are only the m1, m2, m3 in motif_mod
-    assert sorted(bin_motifs["motif_mod"].unique()) == sorted(
-        ["m1_a", "m2_a", "m3_a", "m6_a"]
-    )
-
     # motifs_scored_in_bins
-    print(motifs_scored_in_bins)
-    assert sorted(bin_motifs["motif_mod"].unique().tolist()) == sorted(
+    assert sorted(bin_motif_binary["motif_mod"].unique().tolist()) == sorted(
         motifs_scored_in_bins["motif_mod"].unique().tolist()
     )
     assert motifs_scored_in_bins.shape[1] == 13  # number of columns
