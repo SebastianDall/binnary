@@ -27,8 +27,7 @@ def main(args):
 
     # Step 2: create motifs_scored_in_bins and bin_motif_binary
     bin_motif_binary = data_processing.prepare_bin_motifs_binary(bin_motifs, args)
-    bin_motif_binary.to_csv("bin_motif_binary.csv", index=False)
-
+    
     motifs_scored_in_bins = data_processing.prepare_motifs_scored_in_bins(
         motifs_scored,
         bin_motif_binary,
