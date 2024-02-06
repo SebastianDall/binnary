@@ -41,10 +41,6 @@ def main(args):
             motifs_scored_in_bins, bin_motif_binary, args
         )
 
-    # analysis_results = analysis.perform_analysis(
-    #     motifs_scored, bin_motifs, contig_bins, assembly_stats, assembly_file, args
-    # )
-
     # Step 3: Post-analysis processing and output generation
     data_processing.generate_output(analysis_results, args.out)
     print("Analysis Completed. Results are saved to:", args.out)
