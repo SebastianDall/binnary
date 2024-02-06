@@ -46,14 +46,14 @@ contig_7	a	m2	1	0	100	palindrome
 contig_7	a	m3	1	0	100	palindrome				
 contig_7	a	m4	1	0	100	palindrome				
 contig_7	a	m5	1	0	100	palindrome				
-contig_7	a	m6	1	100	0	palindrome				
+contig_7	a	m6	1	1000	0	palindrome				
 contig_7	a	m7	1	0	100	palindrome				
 contig_8	a	m1	1	50	50	palindrome				
 contig_8	a	m2	1	0	100	palindrome				
 contig_8	a	m3	1	0	100	palindrome				
 contig_8	a	m4	1	0	100	palindrome				
 contig_8	a	m5	1	0	100	palindrome				
-contig_8	a	m6	1	100	0	palindrome				
+contig_8	a	m6	1	1000	0	palindrome				
 contig_8	a	m7	1	0	100	palindrome				
 contig_9	a	m1	1	50	50	palindrome				
 contig_9	a	m2	1	0	100	palindrome				
