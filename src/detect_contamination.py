@@ -33,6 +33,8 @@ def detect_contamination(motifs_scored_in_bins, bin_motif_binary, args):
         bin_motifs_from_motifs_scored_in_bins["mean_methylation"] >= args.mean_methylation_cutoff
     ).astype(int)
 
+    ## Remove bins that has no methylated motifs
+    bin_motifs_from_motifs_scored_in_bins = bin_motifs_from_motifs_scored_in_bins.groupby("bin").filter(lambda x: x["methylation_binary"].sum() > 0)
     
     
     # Create contig motifs binary
