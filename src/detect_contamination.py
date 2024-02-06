@@ -115,26 +115,18 @@ def detect_contamination(motifs_scored_in_bins, bin_motif_binary, args):
     
     
     # Split bin_compare into bin and contig
-    contig_bin_comparison_score[
-        ["contig_bin", "contig", "contig_number", "length"]
-    ] = contig_bin_comparison_score["bin_compare"].str.split("_", expand=True)
-    contig_bin_comparison_score["contig"] = (
-        contig_bin_comparison_score["contig"]
-        + "_"
-        + contig_bin_comparison_score["contig_number"]
-    )
-    contig_bin_comparison_score = contig_bin_comparison_score.drop(
-        columns=["contig_number"]
-    )
-
+    contig_bin_comparison_score[["contig_bin", "contig", "contig_number", "length"]] = contig_bin_comparison_score["bin_compare"].str.split("_", expand=True)
+    contig_bin_comparison_score["contig"] = (contig_bin_comparison_score["contig"] + "_" + contig_bin_comparison_score["contig_number"])
+    contig_bin_comparison_score = contig_bin_comparison_score.drop(columns=["contig_number"])
+    
+    
     # Filter contig_bin == bin and contig_bin_comparison_score > 0
     contamination_contigs = contig_bin_comparison_score[
-        (
-            contig_bin_comparison_score["bin"]
-            == contig_bin_comparison_score["contig_bin"]
-        )
+        (contig_bin_comparison_score["bin"] == contig_bin_comparison_score["contig_bin"])
         & (contig_bin_comparison_score["binary_methylation_missmatch_score"] > 0)
     ]
+    
+    contigs_w_no_methylation = contig_motif_binary[contig_motif_binary.groupby("bin_compare")["methylation_binary_compare"].transform("sum") == 0]["bin_compare"].unique()
     
     # TODO: Find alternative bin for contamination contigs where binary_methylation_missmatch_score != 0
 
@@ -146,6 +138,7 @@ def detect_contamination(motifs_scored_in_bins, bin_motif_binary, args):
             != contig_bin_comparison_score["contig_bin"]
         )
         & (contig_bin_comparison_score["binary_methylation_missmatch_score"] == 0)
+        & (~contig_bin_comparison_score["bin_compare"].isin(contigs_w_no_methylation))
     ]
     contamination_contigs_alternative_bin = contamination_contigs_alternative_bin[
         ["contig", "bin", "binary_methylation_missmatch_score"]
@@ -161,6 +154,13 @@ def detect_contamination(motifs_scored_in_bins, bin_motif_binary, args):
         contamination_contigs_alternative_bin,
         on="contig",
         how="left",
+    )
+    
+    # Remove redundant columns
+    contamination_contigs = contamination_contigs.drop(columns=["contig_bin"])
+    # Rename bin_compare
+    contamination_contigs = contamination_contigs.rename(
+        columns={"bin_compare": "bin_contig_compare"}
     )
 
     return contamination_contigs
