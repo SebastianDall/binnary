@@ -46,7 +46,7 @@ def motifs_scored_in_bins_and_bin_motifs(loaded_data):
     
     # Step 2: create motifs_scored_in_bins
     motifs_scored_in_bins = data_processing.prepare_motifs_scored_in_bins(
-        motifs_scored, bin_motifs, contig_bins, assembly_stats, 
+        motifs_scored, bin_motif_binary, contig_bins, assembly_stats, 
     )
     
     return {
