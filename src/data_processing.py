@@ -114,6 +114,30 @@ def prepare_bin_motifs_binary(bin_motifs, args):
     return bin_motif_binary
 
 
+def construct_bin_motifs_from_motifs_scored_in_bins(motifs_scored_in_bins, motifs_of_interest, args):
+    """
+    Constructs the bin_motifs_from_motifs_scored_in_bins DataFrame by filtering motifs that are not in bin_motif_binary,
+    """
+    # create a comparison dataframe from motifs_scored_in_bins and bin_motif_binary
+    bin_motifs_from_motifs_scored_in_bins = motifs_scored_in_bins[(motifs_scored_in_bins["bin"] != "unbinned") & motifs_scored_in_bins["motif_mod"].isin(motifs_of_interest) ]\
+        .groupby(["bin", "motif_mod"])[["n_mod", "n_nomod"]]\
+        .sum()\
+        .reset_index()
+
+    bin_motifs_from_motifs_scored_in_bins["mean_methylation"] = bin_motifs_from_motifs_scored_in_bins["n_mod"] / (bin_motifs_from_motifs_scored_in_bins["n_mod"] + bin_motifs_from_motifs_scored_in_bins["n_nomod"])
+
+
+    ## Convert mean methylation values to binary
+    bin_motifs_from_motifs_scored_in_bins["methylation_binary"] = (
+        bin_motifs_from_motifs_scored_in_bins["mean_methylation"] >= args.mean_methylation_cutoff
+    ).astype(int)
+
+    ## Remove bins that has no methylated motifs
+    bin_motifs_from_motifs_scored_in_bins = bin_motifs_from_motifs_scored_in_bins.groupby("bin").filter(lambda x: x["methylation_binary"].sum() > 0)
+    
+    return bin_motifs_from_motifs_scored_in_bins
+    
+
 
 def construct_contig_motif_binary(motifs_scored_in_bins, motifs_of_interest, contig_methylation_cutoff, n_motif_cutoff):
     """

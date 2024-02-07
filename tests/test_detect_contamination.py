@@ -13,7 +13,7 @@ def test_detect_contamination(loaded_data, motifs_scored_in_bins_and_bin_motifs)
     print(motifs_scored_in_bins_and_bin_motifs["bin_motif_binary"])
     contaminated_contigs = detect_contamination.detect_contamination(
         motifs_scored_in_bins_and_bin_motifs["motifs_scored_in_bins"],
-        motifs_scored_in_bins_and_bin_motifs["bin_motif_binary"],
+        motifs_scored_in_bins_and_bin_motifs["bin_motif_binary"]["motif_mod"].unique(),
         args
     )
     print("\n")

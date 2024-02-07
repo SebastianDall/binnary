@@ -38,7 +38,7 @@ def main(args):
     # Functions from the analysis module
     if args.command == "detect_contamination":
         analysis_results = detect_contamination.detect_contamination(
-            motifs_scored_in_bins, bin_motif_binary, args
+            motifs_scored_in_bins, bin_motif_binary["motif_mod"].unique(), args
         )
 
     # Step 3: Post-analysis processing and output generation

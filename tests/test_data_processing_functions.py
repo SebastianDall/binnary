@@ -89,7 +89,9 @@ def test_motifs_scored_in_bins(loaded_data):
 
 def test_contig_motif_binary_function(loaded_data, motifs_scored_in_bins_and_bin_motifs):
     """
-    
+    GIVEN loaded_data and motifs_scored_in_bins_and_bin_motifs
+    WHEN construct_contig_motif_binary is called
+    THEN assert that the output contains only the expected columns, and that there are 2 unique motifs and 16 unique contigs
     """
     bin_motif_binary = motifs_scored_in_bins_and_bin_motifs["bin_motif_binary"]
     motifs_scored_in_bins = motifs_scored_in_bins_and_bin_motifs["motifs_scored_in_bins"]
@@ -101,3 +103,29 @@ def test_contig_motif_binary_function(loaded_data, motifs_scored_in_bins_and_bin
     assert contig_motif_binary is not None
     assert contig_motif_binary.columns.tolist() == ["bin_compare", "motif_mod", "methylation_binary_compare"]
     
+    # Assert there are two unique motifs in contig_motif_binary
+    assert contig_motif_binary["motif_mod"].nunique() == 2
+    
+    # Assert that there are 2 bins in contig_motif_binary
+    assert contig_motif_binary["bin_compare"].nunique() == 16
+
+
+def test_bin_motifs_from_motifs_scored_in_bins(loaded_data, motifs_scored_in_bins_and_bin_motifs):
+    """
+    
+    """
+    bin_motif_binary = motifs_scored_in_bins_and_bin_motifs["bin_motif_binary"]
+    motifs_scored_in_bins = motifs_scored_in_bins_and_bin_motifs["motifs_scored_in_bins"]
+    
+    args = MockArgs()
+    
+    bin_motifs_from_motifs_scored_in_bins = data_processing.construct_bin_motifs_from_motifs_scored_in_bins(
+        motifs_scored_in_bins,
+        bin_motif_binary["motif_mod"].unique(),
+        args
+    )
+    
+    print(bin_motifs_from_motifs_scored_in_bins.columns.tolist())
+    
+    assert bin_motifs_from_motifs_scored_in_bins is not None
+    assert bin_motifs_from_motifs_scored_in_bins.columns.tolist() == ['bin', 'motif_mod', 'n_mod', 'n_nomod', 'mean_methylation', 'methylation_binary']

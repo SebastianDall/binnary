@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from src import data_processing as dp 
 
-def detect_contamination(motifs_scored_in_bins, bin_motif_binary, args):
+def detect_contamination(motifs_scored_in_bins, motifs_of_interest, args):
     """
     Takes the bin_motif_binary and motifs_scored_in_bins DataFrames and performs the contamination detection analysis.
     Firstly bin_motif_binary is used to create a binary representation of the methylation status of each motif in each bin.
@@ -15,31 +15,21 @@ def detect_contamination(motifs_scored_in_bins, bin_motif_binary, args):
     
     params:
         motifs_scored_in_bins: pd.DataFrame - DataFrame containing the motifs scored in each bin
-        bin_motif_binary: pd.DataFrame - DataFrame containing the binary representation of the methylation status of each motif in each bin
+        motifs_of_interest: list - List of motifs to be considered from bin_motif_binary
         args: argparse.Namespace - Namespace containing the arguments passed to the script
     
     """
-    # create a comparison dataframe from motifs_scored_in_bins and bin_motif_binary
-    bin_motifs_from_motifs_scored_in_bins = motifs_scored_in_bins[(motifs_scored_in_bins["bin"] != "unbinned") & motifs_scored_in_bins["motif_mod"].isin(bin_motif_binary["motif_mod"].unique()) ]\
-        .groupby(["bin", "motif_mod"])[["n_mod", "n_nomod"]]\
-        .sum()\
-        .reset_index()
-
-    bin_motifs_from_motifs_scored_in_bins["mean_methylation"] = bin_motifs_from_motifs_scored_in_bins["n_mod"] / (bin_motifs_from_motifs_scored_in_bins["n_mod"] + bin_motifs_from_motifs_scored_in_bins["n_nomod"])
-
-
-    ## Convert mean methylation values to binary
-    bin_motifs_from_motifs_scored_in_bins["methylation_binary"] = (
-        bin_motifs_from_motifs_scored_in_bins["mean_methylation"] >= args.mean_methylation_cutoff
-    ).astype(int)
-
-    ## Remove bins that has no methylated motifs
-    bin_motifs_from_motifs_scored_in_bins = bin_motifs_from_motifs_scored_in_bins.groupby("bin").filter(lambda x: x["methylation_binary"].sum() > 0)
+    # Step 1 create bin_motif_from_motifs_scored_in_bins - basis for bin-contig comparison
+    bin_motifs_from_motifs_scored_in_bins = dp.construct_bin_motifs_from_motifs_scored_in_bins(
+        motifs_scored_in_bins,
+        motifs_of_interest,
+        args
+    )
     
     # Create contig motifs binary
     contig_motif_binary = dp.construct_contig_motif_binary(
         motifs_scored_in_bins, 
-        bin_motif_binary["motif_mod"].unique(), 
+        motifs_of_interest, 
         args.mean_methylation_cutoff-0.15, 
         args.n_motif_cutoff
     )
