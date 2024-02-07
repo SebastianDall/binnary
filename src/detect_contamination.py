@@ -90,8 +90,9 @@ def detect_contamination(motifs_scored_in_bins, motifs_of_interest, args):
     
     # Filter contig_bin == bin and contig_bin_comparison_score > 0
     contamination_contigs = contig_bin_comparison_score[
-        (contig_bin_comparison_score["bin"] == contig_bin_comparison_score["contig_bin"])
-        & (contig_bin_comparison_score["binary_methylation_missmatch_score"] > 0)
+        # NOTE: This line also removes all contigs from bins with no methylation
+        (contig_bin_comparison_score["bin"] == contig_bin_comparison_score["contig_bin"]) &
+        (contig_bin_comparison_score["binary_methylation_missmatch_score"] > 0)
     ]
     
     contigs_w_no_methylation = contig_motif_binary[contig_motif_binary.groupby("bin_compare")["methylation_binary_compare"].transform("sum") == 0]["bin_compare"].unique()
@@ -101,12 +102,11 @@ def detect_contamination(motifs_scored_in_bins, motifs_of_interest, args):
     # Find alternative bin for contamination contigs
     ## Must have a perfect match
     contamination_contigs_alternative_bin = contig_bin_comparison_score[
-        (
-            contig_bin_comparison_score["bin"]
-            != contig_bin_comparison_score["contig_bin"]
-        )
-        & (contig_bin_comparison_score["binary_methylation_missmatch_score"] == 0)
-        & (~contig_bin_comparison_score["bin_compare"].isin(contigs_w_no_methylation))
+        # This line removes all bin - contig mathces where the bin is the same as the contig
+        (contig_bin_comparison_score["bin"] != contig_bin_comparison_score["contig_bin"]) &
+        # This line has a side consequence that all contigs from bins with no methylation are removed
+        (contig_bin_comparison_score["binary_methylation_missmatch_score"] == 0) & 
+        (~contig_bin_comparison_score["bin_compare"].isin(contigs_w_no_methylation))
     ]
     contamination_contigs_alternative_bin = contamination_contigs_alternative_bin[
         ["contig", "bin", "binary_methylation_missmatch_score"]
