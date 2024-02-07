@@ -112,3 +112,40 @@ def prepare_bin_motifs_binary(bin_motifs, args):
     bin_motif_binary = bin_motif_binary.reindex(bin_motif_binary_index, fill_value=0).reset_index()
     
     return bin_motif_binary
+
+
+
+def construct_contig_motif_binary(motifs_scored_in_bins, motifs_of_interest, contig_methylation_cutoff, n_motif_cutoff):
+    """
+    Constructs the contig_motif_binary DataFrame by filtering motifs that are not in bin_motif_binary,
+    filtering motifs that are not observed more than n_motif_cutoff times, and converting mean methylation values to binary.
+    
+    params:
+        motifs_scored_in_bins: DataFrame
+        motifs_of_interest: list
+        contig_methylation_cutoff: float
+        n_motif_cutoff: int
+    """
+    # Create contig motifs binary
+    ## Filter motifs that are not in bin_motif_binary
+    contig_motif_binary = motifs_scored_in_bins[motifs_scored_in_bins["motif_mod"].isin(motifs_of_interest)]
+    
+    ## Filter motifs that are not observed more than n_motif_cutoff times
+    contig_motif_binary = contig_motif_binary[contig_motif_binary["n_motifs"] >= n_motif_cutoff]
+
+    ## Convert mean methylation values to binary
+    contig_motif_binary["methylation_binary"] = (contig_motif_binary["mean"] >= (contig_methylation_cutoff)).astype(int)
+
+    ## Rename bin_contig to bin
+    contig_motif_binary = contig_motif_binary[["bin_contig", "motif_mod", "methylation_binary"]]
+    contig_motif_binary.rename(columns={"bin_contig": "bin"}, inplace=True)
+
+    # Combine bin_motif_binary and contig_motif_binary
+    contig_motif_binary = contig_motif_binary.rename(
+        columns={
+            "bin": "bin_compare",
+            "methylation_binary": "methylation_binary_compare",
+        }
+    )
+    
+    return contig_motif_binary

@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from src.data_processing import prepare_bin_motifs_binary
+from src import data_processing as dp 
 
 def detect_contamination(motifs_scored_in_bins, bin_motif_binary, args):
     """
@@ -36,39 +36,17 @@ def detect_contamination(motifs_scored_in_bins, bin_motif_binary, args):
     ## Remove bins that has no methylated motifs
     bin_motifs_from_motifs_scored_in_bins = bin_motifs_from_motifs_scored_in_bins.groupby("bin").filter(lambda x: x["methylation_binary"].sum() > 0)
     
-    
     # Create contig motifs binary
-    ## Filter motifs that are not in bin_motif_binary
-    contig_motif_binary = motifs_scored_in_bins[
-        motifs_scored_in_bins["motif_mod"].isin(bin_motif_binary["motif_mod"].unique())
-    ]
-    ## Filter motifs that are not observed more than n_motif_cutoff times
-    contig_motif_binary = contig_motif_binary[
-        contig_motif_binary["n_motifs"] >= args.n_motif_cutoff
-    ]
-
-    ## Convert mean methylation values to binary
-    contig_motif_binary["methylation_binary"] = (
-        contig_motif_binary["mean"] >= (args.mean_methylation_cutoff-0.15)
-    ).astype(int)
-
-    ## Remove unbinned contigs
-    contig_motif_binary = contig_motif_binary[contig_motif_binary["bin"] != "unbinned"]
-
-    ## Rename bin_contig to bin
-    contig_motif_binary = contig_motif_binary[
-        ["bin_contig", "motif_mod", "methylation_binary"]
-    ]
-    contig_motif_binary.rename(columns={"bin_contig": "bin"}, inplace=True)
-
-    # Combine bin_motif_binary and contig_motif_binary
-    contig_motif_binary = contig_motif_binary.rename(
-        columns={
-            "bin": "bin_compare",
-            "methylation_binary": "methylation_binary_compare",
-        }
+    contig_motif_binary = dp.construct_contig_motif_binary(
+        motifs_scored_in_bins, 
+        bin_motif_binary["motif_mod"].unique(), 
+        args.mean_methylation_cutoff-0.15, 
+        args.n_motif_cutoff
     )
-    
+    # Remove unbinned motifs
+    contig_motif_binary = contig_motif_binary[~contig_motif_binary["bin_compare"].str.contains("unbinned")]
+
+    # Merge bin_motifs_from_motifs_scored_in_bins and contig_motif_binary    
     motif_binary_compare = pd.merge(
         bin_motifs_from_motifs_scored_in_bins, contig_motif_binary, on="motif_mod"
     )
