@@ -7,7 +7,12 @@ from src import data_processing as dp
 
 def include_contigs(motifs_scored_in_bins, motifs_of_interest, args):
     """
+    Takes the motifs_scored_in_bins and motifs_of_interest DataFrames and finds unbinned contigs with an exact methylation pattern as the bin.
     
+    params:
+        motifs_scored_in_bins: pd.DataFrame - DataFrame containing the motifs scored in each bin
+        motifs_of_interest: list - List of motifs to be considered from bin_motif_binary
+        args: argparse.Namespace - Namespace containing the arguments passed to the script
     
     """
     
@@ -33,22 +38,6 @@ def include_contigs(motifs_scored_in_bins, motifs_of_interest, args):
     
     
     # match pattern between bin and contig
-    # Define the conditions
-    conditions = [
-        (motif_binary_compare["methylation_binary"] == 1)
-        & (motif_binary_compare["methylation_binary_compare"] == 1),
-        (motif_binary_compare["methylation_binary"] == 1)
-        & (motif_binary_compare["methylation_binary_compare"] == 0),
-        (motif_binary_compare["methylation_binary"] == 0)
-        & (motif_binary_compare["methylation_binary_compare"] == 1),
-        (motif_binary_compare["methylation_binary"] == 0)
-        & (motif_binary_compare["methylation_binary_compare"] == 0),
-        (motif_binary_compare["methylation_binary"] == 1)
-        & (motif_binary_compare["methylation_binary_compare"].isna()),
-        (motif_binary_compare["methylation_binary"] == 0)
-        & (motif_binary_compare["methylation_binary_compare"].isna()),
-    ]
-
     # Define the corresponding choices for each condition
     choices = [
         0,  # bin motif is methylated, contig motif is methylated
@@ -59,24 +48,7 @@ def include_contigs(motifs_scored_in_bins, motifs_of_interest, args):
         1,  # bin motif is not methylated, contig motif is not observed
     ]
 
-    # Use numpy.select to apply these conditions and choices
-    motif_binary_compare["motif_comparison_score"] = np.select(
-        conditions, choices, default=np.nan
-    )
-    
-    # sum motif_comparison_score by bin
-    contig_bin_comparison_score = (
-        motif_binary_compare.groupby(["bin", "bin_compare"])["motif_comparison_score"]
-        .sum()
-        .reset_index(name="binary_methylation_missmatch_score")
-    )
-
-    
-    
-    # Split bin_compare into bin and contig
-    contig_bin_comparison_score[["contig_bin", "contig", "contig_number", "length"]] = contig_bin_comparison_score["bin_compare"].str.split("_", expand=True)
-    contig_bin_comparison_score["contig"] = (contig_bin_comparison_score["contig"] + "_" + contig_bin_comparison_score["contig_number"])
-    contig_bin_comparison_score = contig_bin_comparison_score.drop(columns=["contig_number"])
+    contig_bin_comparison_score = dp.compare_methylation_pattern(motif_binary_compare, choices)
     
     # Find contigs with no methylation
     contigs_w_no_methylation = contig_motif_binary[contig_motif_binary.groupby("bin_compare")["methylation_binary_compare"].transform("sum") == 0]["bin_compare"].unique()
