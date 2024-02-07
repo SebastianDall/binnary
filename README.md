@@ -28,6 +28,15 @@ To run a test, run the following command:
     --out output.tsv
 ```
 
+```bash
+./binnary.py include_contigs --motifs_scored data/motifs-scored.tsv \
+    --bin_motifs data/bin-motifs.tsv \
+    --contig_bins data/bins.tsv \
+    --assembly_stats data/assembly_info.txt \
+    --out output.tsv
+```
+
+
 ## Test 2
     
 
@@ -38,4 +47,13 @@ To run a test, run the following command:
     --contig_bins data/PaPr00000216MP/bins.tsv \
     --assembly_stats data/PaPr00000216MP/flye/assembly_info.txt \
     --out binnary-PaPr00000216MP.tsv
+```
+
+```bash
+./binnary.py include_contigs \
+    --motifs_scored data/PaPr00000216MP/nanomotif/motifs-scored.tsv \
+    --bin_motifs data/PaPr00000216MP/nanomotif/bin-motifs.tsv \
+    --contig_bins data/PaPr00000216MP/bins.tsv \
+    --assembly_stats data/PaPr00000216MP/flye/assembly_info.txt \
+    --out binnary-include-PaPr00000216MP.tsv
 ```
