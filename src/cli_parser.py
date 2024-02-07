@@ -35,7 +35,7 @@ def get_parser():
     subparsers = parser.add_subparsers(dest="command", help="Sub-command help")
 
     # Create subparsers for each command
-    commands = ["detect_contamination", "bin_unbinned", "bin_contamination"]
+    commands = ["detect_contamination", "include_contigs"] #"bin_unbinned", "bin_contamination"
     for command in commands:
         subparser = subparsers.add_parser(command, help=f"{command} help")
         add_common_arguments(subparser)  # Add common arguments to each subparser
