@@ -87,3 +87,17 @@ def test_motifs_scored_in_bins(loaded_data):
     )
 
 
+def test_contig_motif_binary_function(loaded_data, motifs_scored_in_bins_and_bin_motifs):
+    """
+    
+    """
+    bin_motif_binary = motifs_scored_in_bins_and_bin_motifs["bin_motif_binary"]
+    motifs_scored_in_bins = motifs_scored_in_bins_and_bin_motifs["motifs_scored_in_bins"]
+    
+    args = MockArgs()
+    
+    contig_motif_binary = data_processing.construct_contig_motif_binary(motifs_scored_in_bins, bin_motif_binary["motif_mod"].unique(), args.mean_methylation_cutoff-0.15, args.n_motif_cutoff)
+    
+    assert contig_motif_binary is not None
+    assert contig_motif_binary.columns.tolist() == ["bin_compare", "motif_mod", "methylation_binary_compare"]
+    
