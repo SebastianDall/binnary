@@ -1,5 +1,6 @@
 import pandas as pd
 from Bio import SeqIO
+import numpy as np
 
 def load_data(args):
     """
@@ -173,3 +174,45 @@ def construct_contig_motif_binary(motifs_scored_in_bins, motifs_of_interest, con
     )
     
     return contig_motif_binary
+
+
+def compare_methylation_pattern(motif_binary_compare, choices):
+    """
+    Compares the methylation pattern between bin and contig motifs and calculates the motif_comparison_score.
+    """
+    # Define the conditions
+    conditions = [
+        (motif_binary_compare["methylation_binary"] == 1)
+        & (motif_binary_compare["methylation_binary_compare"] == 1),
+        (motif_binary_compare["methylation_binary"] == 1)
+        & (motif_binary_compare["methylation_binary_compare"] == 0),
+        (motif_binary_compare["methylation_binary"] == 0)
+        & (motif_binary_compare["methylation_binary_compare"] == 1),
+        (motif_binary_compare["methylation_binary"] == 0)
+        & (motif_binary_compare["methylation_binary_compare"] == 0),
+        (motif_binary_compare["methylation_binary"] == 1)
+        & (motif_binary_compare["methylation_binary_compare"].isna()),
+        (motif_binary_compare["methylation_binary"] == 0)
+        & (motif_binary_compare["methylation_binary_compare"].isna()),
+    ]
+
+
+    # Use numpy.select to apply these conditions and choices
+    motif_binary_compare["motif_comparison_score"] = np.select(
+        conditions, choices, default=np.nan
+    )
+    
+    # sum motif_comparison_score by bin
+    contig_bin_comparison_score = (
+        motif_binary_compare.groupby(["bin", "bin_compare"])["motif_comparison_score"]
+        .sum()
+        .reset_index(name="binary_methylation_missmatch_score")
+    )
+    
+    # Split bin_compare into bin and contig
+    contig_bin_comparison_score[["contig_bin", "contig", "contig_number", "length"]] = contig_bin_comparison_score["bin_compare"].str.split("_", expand=True)
+    contig_bin_comparison_score["contig"] = (contig_bin_comparison_score["contig"] + "_" + contig_bin_comparison_score["contig_number"])
+    contig_bin_comparison_score = contig_bin_comparison_score.drop(columns=["contig_number"])
+    
+    
+    return contig_bin_comparison_score
