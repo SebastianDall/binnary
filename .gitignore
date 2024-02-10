@@ -1,3 +1,7 @@
+analysis/
+data/PaPr00000216MP*
+output/
+
 R
 output.tsv
 # History files
