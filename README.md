@@ -42,18 +42,18 @@ To run a test, run the following command:
 
 ```bash
 ./binnary.py detect_contamination \
-    --motifs_scored data/PaPr00000216MP/nanomotif/motifs-scored.tsv \
-    --bin_motifs data/PaPr00000216MP/nanomotif/bin-motifs.tsv \
-    --contig_bins data/PaPr00000216MP/bins.tsv \
-    --assembly_stats data/PaPr00000216MP/flye/assembly_info.txt \
-    --out binnary-PaPr00000216MP.tsv
+    --motifs_scored data/PaPr00000216MP_nm_0.1.18/nanomotif/motifs-scored.tsv \
+    --bin_motifs data/PaPr00000216MP_nm_0.1.18/nanomotif/bin-motifs.tsv \
+    --contig_bins data/PaPr00000216MP_nm_0.1.18/bins.tsv \
+    --assembly_stats data/PaPr00000216MP_nm_0.1.18/flye/assembly_info.txt \
+    --out output/binnary-contamination-PaPr00000216MP_nm_0.1.18.tsv
 ```
 
 ```bash
 ./binnary.py include_contigs \
-    --motifs_scored data/PaPr00000216MP/nanomotif/motifs-scored.tsv \
-    --bin_motifs data/PaPr00000216MP/nanomotif/bin-motifs.tsv \
-    --contig_bins data/PaPr00000216MP/bins.tsv \
-    --assembly_stats data/PaPr00000216MP/flye/assembly_info.txt \
-    --out binnary-include-PaPr00000216MP.tsv
+    --motifs_scored data/PaPr00000216MP_nm_0.1.18/nanomotif/motifs-scored.tsv \
+    --bin_motifs data/PaPr00000216MP_nm_0.1.18/nanomotif/bin-motifs.tsv \
+    --contig_bins data/PaPr00000216MP_nm_0.1.18/bins.tsv \
+    --assembly_stats data/PaPr00000216MP_nm_0.1.18/flye/assembly_info.txt \
+    --out output/binnary-include-PaPr00000216MP_nm_0.1.18.tsv
 ```
