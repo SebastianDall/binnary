@@ -1,6 +1,7 @@
 import pandas as pd
 from Bio import SeqIO
 import numpy as np
+import os
 
 def load_data(args):
     """
@@ -36,6 +37,11 @@ def generate_output(output_df, output_path):
     """
     Generate the output files for the analysis.
     """
+    # If the output directory does not exist, create it
+    output_dir = os.path.dirname(output_path)
+    if not os.path.exists(output_dir) and output_dir != "":
+        os.makedirs(output_dir)
+        
     # Generate the output files
     output_df.to_csv(output_path, sep="\t", index=False)
 
