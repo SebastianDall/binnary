@@ -69,7 +69,7 @@ def test_motifs_scored_in_bins(loaded_data):
     # Step 2: create motifs_scored_in_bins
     motifs_scored_in_bins = data_processing.prepare_motifs_scored_in_bins(
         motifs_scored,
-        bin_motif_binary,
+        bin_motif_binary.motif_mod.unique(),
         contig_bins,
         assembly_stats,
     )
