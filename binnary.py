@@ -1,4 +1,4 @@
-#!/bin/env python3
+#!/usr/bin/env python3
 import sys
 from src import data_processing, detect_contamination, include_contigs
 from src.cli_parser import get_parser
@@ -28,9 +28,12 @@ def main(args):
     # Step 2: create motifs_scored_in_bins and bin_motif_binary
     bin_motif_binary = data_processing.prepare_bin_motifs_binary(bin_motifs, args)
     bin_motif_binary.to_csv("bin_motif_binary.csv", index=False)
+    
+    motifs_in_bins = bin_motif_binary["motif_mod"].unique()
+    
     motifs_scored_in_bins = data_processing.prepare_motifs_scored_in_bins(
         motifs_scored,
-        bin_motif_binary,
+        motifs_in_bins,
         contig_bins,
         assembly_stats,
     )
@@ -38,12 +41,12 @@ def main(args):
     # Functions from the analysis module
     if args.command == "detect_contamination":
         analysis_results = detect_contamination.detect_contamination(
-            motifs_scored_in_bins, bin_motif_binary["motif_mod"].unique(), args
+            motifs_scored_in_bins, motifs_in_bins, args
         )
 
     if args.command == "include_contigs":
         analysis_results = include_contigs.include_contigs(
-            motifs_scored_in_bins, bin_motif_binary["motif_mod"].unique(), args
+            motifs_scored_in_bins, motifs_in_bins, args
         )
     
     

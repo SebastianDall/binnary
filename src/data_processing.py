@@ -46,17 +46,15 @@ def generate_output(output_df, output_path):
     output_df.to_csv(output_path, sep="\t", index=False)
 
 
-def prepare_motifs_scored_in_bins(motifs_scored, bin_motif_binary, contig_bins, assembly_stats):
+def prepare_motifs_scored_in_bins(motifs_scored, motifs_of_interest, contig_bins, assembly_stats):
     """
     Prepares the motifs_scored_in_bins DataFrame by merging with bin motifs, contig bins, and assembly stats,
     and calculates additional metrics like number of motifs and mean methylation per contig.
     """
-    # Create find bin motifs
-    motifs_in_bins = bin_motif_binary["motif_mod"].unique()
-    
+       
     # Filter and enhance motifs_scored based on motifs_in_bins
     motifs_scored["motif_mod"] = motifs_scored["motif"] + "_" + motifs_scored["mod_type"]
-    motifs_scored_in_bins = motifs_scored[motifs_scored["motif_mod"].isin(motifs_in_bins)]
+    motifs_scored_in_bins = motifs_scored[motifs_scored["motif_mod"].isin(motifs_of_interest)]
     
     # Merge with contig_bins and assembly_stats
     motifs_scored_in_bins = motifs_scored_in_bins.merge(contig_bins, on="contig", how="left")
@@ -88,25 +86,18 @@ def prepare_bin_motifs_binary(bin_motifs, args):
     """
     Prepares the bin_motifs_binary DataFrame by calculating the mean methylation per bin and motif_mod and converting it to binary.    
     """
-    # Alter bin_motifs to include motif_mod and mean
+    # Combine 'motif' and 'mod_type' into 'motif_mod'
     bin_motifs["motif_mod"] = bin_motifs["motif"] + "_" + bin_motifs["mod_type"]
-    # Calculate n_motifs and mean methylation
+
+    # Calculate total motifs and mean methylation
     bin_motifs["n_motifs"] = bin_motifs["n_mod_bin"] + bin_motifs["n_nomod_bin"]
-    bin_motifs["mean"] = bin_motifs["n_mod_bin"] / bin_motifs["n_motifs"]
-    
-    
-    # Create find bin motifs binary
-    ## Step 1: Group by bin and motif_mod and calculate mean methylation
-    bin_motif_binary = (
-        bin_motifs.groupby(["bin", "motif_mod"])["mean"]
-        .mean()
-        .reset_index(name="mean_methylation")
-    )
-    
-    ## Step 2: Convert mean methylation values to binary
-    bin_motif_binary["methylation_binary"] = (
-        bin_motif_binary["mean_methylation"] >= args.mean_methylation_cutoff
-    ).astype(int)
+    bin_motifs["mean_methylation"] = bin_motifs["n_mod_bin"] / bin_motifs["n_motifs"]
+
+    # Create 'methylation_binary' column based on mean methylation cutoff
+    bin_motifs["methylation_binary"] = (bin_motifs["mean_methylation"] >= args.mean_methylation_cutoff).astype(int)
+
+    # Filter for rows where 'methylation_binary' is 1 and select relevant columns
+    bin_motif_binary = bin_motifs[bin_motifs["methylation_binary"] == 1][["bin", "motif_mod", "mean_methylation", "methylation_binary"]]
     
     ## Step 3: Only keep motifs with methylation binary == 1
     bin_motif_binary = bin_motif_binary[bin_motif_binary["methylation_binary"] == 1]
