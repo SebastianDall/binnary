@@ -96,12 +96,12 @@ def prepare_bin_motifs_binary(bin_motifs, args):
     # Create 'methylation_binary' column based on mean methylation cutoff
     bin_motifs["methylation_binary"] = (bin_motifs["mean_methylation"] >= args.mean_methylation_cutoff).astype(int)
 
+    # filter motifs that are not observed more than n_motif_bin_cutoff times
+    bin_motifs = bin_motifs[bin_motifs["n_motifs"] >= args.n_motif_bin_cutoff]
+    
     # Filter for rows where 'methylation_binary' is 1 and select relevant columns
     bin_motif_binary = bin_motifs[bin_motifs["methylation_binary"] == 1][["bin", "motif_mod", "mean_methylation", "methylation_binary"]]
     
-    ## Step 3: Only keep motifs with methylation binary == 1
-    bin_motif_binary = bin_motif_binary[bin_motif_binary["methylation_binary"] == 1]
-
     ## Step 4: Create a binary index for bin and motif_mod
     bin_motif_binary_index = pd.MultiIndex.from_product([bin_motif_binary["bin"].unique(), bin_motif_binary["motif_mod"].unique()], names=['bin', 'motif_mod'])
 
@@ -122,15 +122,45 @@ def construct_bin_motifs_from_motifs_scored_in_bins(motifs_scored_in_bins, motif
         .sum()\
         .reset_index()
 
-    bin_motifs_from_motifs_scored_in_bins["mean_methylation"] = bin_motifs_from_motifs_scored_in_bins["n_mod"] / (bin_motifs_from_motifs_scored_in_bins["n_mod"] + bin_motifs_from_motifs_scored_in_bins["n_nomod"])
+    bin_motifs_from_motifs_scored_in_bins["n_motifs_bin"] = bin_motifs_from_motifs_scored_in_bins["n_mod"] + bin_motifs_from_motifs_scored_in_bins["n_nomod"]
 
+    # Filter motifs that are not observed more than n_motif_bin_cutoff times
+    bin_motifs_from_motifs_scored_in_bins = bin_motifs_from_motifs_scored_in_bins[bin_motifs_from_motifs_scored_in_bins["n_motifs_bin"] > args.n_motif_bin_cutoff] 
+    
+    # Calculate mean methylation
+    bin_motifs_from_motifs_scored_in_bins["mean_methylation"] = bin_motifs_from_motifs_scored_in_bins["n_mod"] / bin_motifs_from_motifs_scored_in_bins["n_motifs_bin"]
 
+    # Calculate standard deviation of methylation per bin and motif_mod
+    bin_motifs_mean_and_sd = motifs_scored_in_bins[
+        (motifs_scored_in_bins["bin"] != "unbinned") & 
+        motifs_scored_in_bins["motif_mod"].isin(motifs_of_interest) & 
+        (motifs_scored_in_bins["mean"] > 0.1) &
+        (motifs_scored_in_bins["n_motifs"] > args.n_motif_contig_cutoff)
+        ] \
+        .groupby(["bin", "motif_mod"]).agg(
+            mean_methylation_bin = pd.NamedAgg(column="mean", aggfunc="mean"),
+            std_methylation_bin = pd.NamedAgg(column="mean", aggfunc="std"),
+            n_contigs = pd.NamedAgg(column="contig", aggfunc="count"),
+        ).reset_index()
+
+    # Fill std_methylation_bin with 0.15/4 for bins with only one contig, which will allow the score to be mean-0.15 at most
+    bin_motifs_mean_and_sd["std_methylation_bin"] = bin_motifs_mean_and_sd["std_methylation_bin"].fillna(0.15/4)
+    
+    
+    # Merge with bin_motifs_from_motifs_scored_in_bins
+    bin_motifs_from_motifs_scored_in_bins = bin_motifs_from_motifs_scored_in_bins.merge(bin_motifs_mean_and_sd, on=["bin", "motif_mod"], how="left")
+    
+    bin_motifs_from_motifs_scored_in_bins.to_csv("bin_motifs_from_motifs_scored_in_bins.tsv", index=False, sep="\t")
+    
+    # TODO: Does this make sense? All motifs with mean_methylation above 0.25 is called as methylated.
     ## Convert mean methylation values to binary
     bin_motifs_from_motifs_scored_in_bins["methylation_binary"] = (
-        bin_motifs_from_motifs_scored_in_bins["mean_methylation"] >= args.mean_methylation_cutoff
+        bin_motifs_from_motifs_scored_in_bins["mean_methylation"] >= 0.14
     ).astype(int)
 
-    ## Remove bins that has no methylated motifs
+
+    # NOTE This makes us unable to find some contigs, which should be included in the analysis
+    # ## Remove bins that has no methylated motifs
     bin_motifs_from_motifs_scored_in_bins = bin_motifs_from_motifs_scored_in_bins.groupby("bin").filter(lambda x: x["methylation_binary"].sum() > 0)
     
     return bin_motifs_from_motifs_scored_in_bins
@@ -160,6 +190,9 @@ def construct_contig_motif_binary(motifs_scored_in_bins, motifs_of_interest, con
 
     ## Rename bin_contig to bin
     contig_motif_binary = contig_motif_binary[["bin_contig", "motif_mod", "methylation_binary"]]
+    
+    # TODO: This makes no sense with two renamings in a row
+    
     contig_motif_binary.rename(columns={"bin_contig": "bin"}, inplace=True)
 
     # Combine bin_motif_binary and contig_motif_binary
