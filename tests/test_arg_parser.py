@@ -33,5 +33,4 @@ def test_argparser_detect_contamination_with_specific_data(mocker):
     assert args.bin_motifs == "data/bin-motifs.tsv"
     assert args.contig_bins == "data/bins.tsv"
     assert args.assembly_stats == "data/assembly_info.txt"
-    # assert args.assembly_file == "data/assembly_file.fasta"
     assert args.out == "output.tsv"
