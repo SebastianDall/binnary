@@ -39,12 +39,12 @@ def test_feature_with_loaded_data(loaded_data):
 def test_prepare_bin_motif_binary(loaded_data):
     """
     GIVEN loaded_data
-    WHEN prepare_bin_motifs_binary is called
+    WHEN calculate_binary_methylation_bin_consensus_from_bin_motifs is called
     THEN assert that the output contains only the expected columns
     """
     args = MockArgs()
     
-    bin_motif_binary = data_processing.prepare_bin_motifs_binary(loaded_data["bin_motifs"], args)
+    bin_motif_binary = data_processing.calculate_binary_methylation_bin_consensus_from_bin_motifs(loaded_data["bin_motifs"], args)
     
     assert bin_motif_binary is not None
     assert bin_motif_binary.columns.tolist() == ["bin", "motif_mod", "mean_methylation", "methylation_binary"]
@@ -67,7 +67,7 @@ def test_motifs_scored_in_bins(loaded_data):
 
     # Step 1 create bin_motif_binary
     args = MockArgs()
-    bin_motif_binary = data_processing.prepare_bin_motifs_binary(bin_motifs, args)
+    bin_motif_binary = data_processing.calculate_binary_methylation_bin_consensus_from_bin_motifs(bin_motifs, args)
 
     # Step 2: create motifs_scored_in_bins
     motifs_scored_in_bins = data_processing.prepare_motifs_scored_in_bins(

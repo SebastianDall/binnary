@@ -42,7 +42,7 @@ def motifs_scored_in_bins_and_bin_motifs(loaded_data):
     contig_bins = loaded_data["contig_bins"]
     assembly_stats = loaded_data["assembly_stats"]
     
-    bin_motif_binary = data_processing.prepare_bin_motifs_binary(bin_motifs, args)
+    bin_motif_binary = data_processing.calculate_binary_methylation_bin_consensus_from_bin_motifs(bin_motifs, args)
     
     motifs_in_bins = bin_motif_binary["motif_mod"].unique()
     

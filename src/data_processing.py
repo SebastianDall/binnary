@@ -38,7 +38,7 @@ def generate_output(output_df, output_path):
 
 
 # TODO: rename - filter bin consensus motifs calculate_binary_methylation_bin_consensus
-def prepare_bin_motifs_binary(bin_motifs, args):
+def calculate_binary_methylation_bin_consensus_from_bin_motifs(bin_motifs, args):
     """
     Prepares the bin_motifs_binary DataFrame by calculating the mean methylation per bin and motif_mod and converting it to binary.    
     """

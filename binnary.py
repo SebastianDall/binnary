@@ -26,14 +26,13 @@ def main(args):
     
 
     # Step 2: create motifs_scored_in_bins and bin_motif_binary
-    bin_motif_binary = data_processing.prepare_bin_motifs_binary(bin_motifs, args)
-    bin_motif_binary.to_csv("bin_motif_binary.csv", index=False)
+    bin_motif_binary = data_processing.calculate_binary_methylation_bin_consensus_from_bin_motifs(bin_motifs, args)
     
-    motifs_in_bins = bin_motif_binary["motif_mod"].unique()
+    motifs_in_bin_consensus = bin_motif_binary["motif_mod"].unique()
     
     motifs_scored_in_bins = data_processing.prepare_motifs_scored_in_bins(
         motifs_scored,
-        motifs_in_bins,
+        motifs_in_bin_consensus,
         contig_bins,
         assembly_stats,
     )
@@ -41,12 +40,12 @@ def main(args):
     # Functions from the analysis module
     if args.command == "detect_contamination":
         analysis_results = detect_contamination.detect_contamination(
-            motifs_scored_in_bins, motifs_in_bins, args
+            motifs_scored_in_bins, motifs_in_bin_consensus, args
         )
 
     if args.command == "include_contigs":
         analysis_results = include_contigs.include_contigs(
-            motifs_scored_in_bins, motifs_in_bins, args
+            motifs_scored_in_bins, motifs_in_bin_consensus, args
         )
     
     
