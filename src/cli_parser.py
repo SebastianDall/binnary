@@ -17,14 +17,20 @@ def add_common_arguments(subparser):
     subparser.add_argument(
         "--mean_methylation_cutoff",
         type=float,
-        default=0.75,
+        default=0.25,
         help="Cutoff value for considering a motif as methylated",
     )
     subparser.add_argument(
-        "--n_motif_cutoff",
+        "--n_motif_contig_cutoff",
         type=int,
-        default=6,
-        help="Number of motifs observed before considering a motif valid",
+        default=10,
+        help="Number of motifs that needs to be observed in a contig to be scored",
+    )
+    subparser.add_argument(
+        "--n_motif_bin_cutoff",
+        type=int,
+        default=500,
+        help="Number of motifs that needs to be observed in a bin to be considered",
     )
     subparser.add_argument("--out", type=str, help="Path to output filename")
 
