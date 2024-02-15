@@ -125,10 +125,10 @@ def remove_ambiguous_motifs_from_bin_consensus(motifs_scored_in_bins, motifs_of_
     # Remove motifs in bins where the percentage of ambiguous motifs is above the cutoff
     bin_consensus_without_ambiguous_motifs = bin_consensus_ambiguous_motifs[~(bin_consensus_ambiguous_motifs["percentage_ambiguous"] > args.ambiguous_motif_percentage_cutoff)]
     
-    return bin_consensus_without_ambiguous_motifs[["bin", "motif_mod", "total_ambiguous", "n_contigs_with_motif", "percentage_ambiguous"]]
+    return bin_consensus_without_ambiguous_motifs[["bin", "motif_mod"]]
 
 
-
+# TODO: rename - calculate_bin_consensus_from_contigs
 def construct_bin_motifs_from_motifs_scored_in_bins(motifs_scored_in_bins, motifs_of_interest, args):
     """
     Constructs the bin_motifs_from_motifs_scored_in_bins DataFrame by filtering motifs that are not in bin_motif_binary,
@@ -188,45 +188,58 @@ def construct_bin_motifs_from_motifs_scored_in_bins(motifs_scored_in_bins, motif
     return bin_motifs_from_motifs_scored_in_bins
     
 
-
-# def construct_contig_motif_binary(motifs_scored_in_bins, motifs_of_interest, contig_methylation_cutoff, n_motif_cutoff):
-#     """
-#     Constructs the contig_motif_binary DataFrame by filtering motifs that are not in bin_motif_binary,
-#     filtering motifs that are not observed more than n_motif_cutoff times, and converting mean methylation values to binary.
+def calculate_binary_motif_comparison_matrix(motifs_scored_in_bins, motifs_of_interest, args):
+    # Step 1 create bin_motif_from_motifs_scored_in_bins - basis for bin-contig comparison
+    bin_motifs_from_motifs_scored_in_bins = construct_bin_motifs_from_motifs_scored_in_bins(
+        motifs_scored_in_bins,
+        motifs_of_interest,
+        args
+    )
     
-#     params:
-#         motifs_scored_in_bins: DataFrame
-#         motifs_of_interest: list
-#         contig_methylation_cutoff: float
-#         n_motif_cutoff: int
-#     """
-#     # Create contig motifs binary
-#     ## Filter motifs that are not in bin_motif_binary
-#     contig_motif_binary = motifs_scored_in_bins[motifs_scored_in_bins["motif_mod"].isin(motifs_of_interest)]
+    # Remove unbinned motifs
+    motifs_scored_in_contigs = motifs_scored_in_bins[~motifs_scored_in_bins["bin_contig"].str.contains("unbinned")]
     
-#     ## Filter motifs that are not observed more than n_motif_cutoff times
-#     contig_motif_binary = contig_motif_binary[contig_motif_binary["n_motifs"] >= n_motif_cutoff]
-
-#     ## Convert mean methylation values to binary
-#     contig_motif_binary["methylation_binary"] = (contig_motif_binary["mean"] >= (contig_methylation_cutoff)).astype(int)
-
-#     ## Rename bin_contig to bin
-#     contig_motif_binary = contig_motif_binary[["bin_contig", "motif_mod", "methylation_binary"]]
+    ## Filter motifs that are not observed more than n_motif_cutoff times
+    motifs_scored_in_contigs = motifs_scored_in_contigs[motifs_scored_in_contigs["n_motifs"] >= args.n_motif_contig_cutoff]   
     
-#     # TODO: This makes no sense with two renamings in a row
+    ## Rename bin_contig to bin
+    motifs_scored_in_contigs = motifs_scored_in_contigs[["bin_contig", "motif_mod", "mean"]]
+    motifs_scored_in_contigs.rename(columns={"bin_contig": "bin_compare"}, inplace=True)
     
-#     contig_motif_binary.rename(columns={"bin_contig": "bin"}, inplace=True)
 
-#     # Combine bin_motif_binary and contig_motif_binary
-#     contig_motif_binary = contig_motif_binary.rename(
-#         columns={
-#             "bin": "bin_compare",
-#             "methylation_binary": "methylation_binary_compare",
-#         }
-#     )
+    # Merge bin_motifs_from_motifs_scored_in_bins and motifs_scored_in_contigs    
+    motif_binary_compare = pd.merge(
+        bin_motifs_from_motifs_scored_in_bins, motifs_scored_in_contigs, on="motif_mod"
+    )
     
-#     return contig_motif_binary
-
+    
+    # Calculate the mean methylation value for each motif in each bin
+    motif_binary_compare["methylation_mean_threshold"] = np.where(
+        motif_binary_compare["methylation_binary"] == 1,
+        np.maximum(motif_binary_compare["mean_methylation"] - 4 * motif_binary_compare["std_methylation_bin"], 0.1),
+        np.nan
+    )
+    
+    motif_binary_compare["methylation_binary_compare"] = np.where(
+        motif_binary_compare["methylation_binary"] == 1,
+        (motif_binary_compare["mean"] >= motif_binary_compare["methylation_mean_threshold"]).astype(int),
+        np.nan
+    )
+    
+    
+    motif_binary_compare["methylation_mean_threshold"] = np.where(
+        motif_binary_compare["methylation_binary"] == 0,
+        0.25,
+        motif_binary_compare["methylation_mean_threshold"]
+    )
+    
+    motif_binary_compare["methylation_binary_compare"] = np.where(
+        motif_binary_compare["methylation_binary"] == 0,
+        (motif_binary_compare["mean"] >= 0.25).astype(int),
+        motif_binary_compare["methylation_binary_compare"]
+    )
+    
+    return motif_binary_compare
 
 def compare_methylation_pattern(motif_binary_compare, choices):
     """
