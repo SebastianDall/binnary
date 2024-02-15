@@ -36,7 +36,7 @@ def test_feature_with_loaded_data(loaded_data):
 
 
 
-def test_prepare_bin_motif_binary(loaded_data):
+def test_calculate_binary_methylation_bin_consensus_from_bin_motifs(loaded_data):
     """
     GIVEN loaded_data
     WHEN calculate_binary_methylation_bin_consensus_from_bin_motifs is called
@@ -97,14 +97,12 @@ def test_bin_motifs_from_motifs_scored_in_bins(loaded_data, motifs_scored_in_bin
     WHEN construct_bin_motifs_from_motifs_scored_in_bins is called
     THEN assert that the output contains only the expected columns
     """
-    bin_motif_binary = motifs_scored_in_bins_and_bin_motifs["bin_motif_binary"]
     motifs_scored_in_bins = motifs_scored_in_bins_and_bin_motifs["motifs_scored_in_bins"]
     
     args = MockArgs()
     
     bin_motifs_from_motifs_scored_in_bins = data_processing.construct_bin_motifs_from_motifs_scored_in_bins(
         motifs_scored_in_bins,
-        bin_motif_binary["motif_mod"].unique(),
         args
     )
     
@@ -118,16 +116,12 @@ def test_calculate_binary_motif_comparison_matrix(loaded_data, motifs_scored_in_
     WHEN calculate_binary_motif_comparison_matrix is called
     THEN assert that the output contains only the expected columns
     """
-    bin_motif_binary = motifs_scored_in_bins_and_bin_motifs["bin_motif_binary"]
     motifs_scored_in_bins = motifs_scored_in_bins_and_bin_motifs["motifs_scored_in_bins"]
     
     args = MockArgs()
     
-    motifs_of_interest = bin_motif_binary["motif_mod"].unique()
-    
     motif_binary_compare = data_processing.calculate_binary_motif_comparison_matrix(
         motifs_scored_in_bins[~motifs_scored_in_bins["bin_contig"].str.contains("unbinned")],
-        motifs_of_interest,
         args
     )
     
@@ -146,16 +140,12 @@ def test_compare_methylation_pattern(loaded_data, motifs_scored_in_bins_and_bin_
     """
     
     """
-    bin_motif_binary = motifs_scored_in_bins_and_bin_motifs["bin_motif_binary"]
     motifs_scored_in_bins = motifs_scored_in_bins_and_bin_motifs["motifs_scored_in_bins"]
     
     args = MockArgs()
     
-    motifs_of_interest = bin_motif_binary["motif_mod"].unique()
-    
     motif_binary_compare = data_processing.calculate_binary_motif_comparison_matrix(
         motifs_scored_in_bins[~motifs_scored_in_bins["bin_contig"].str.contains("unbinned")],
-        motifs_of_interest,
         args
     )
     

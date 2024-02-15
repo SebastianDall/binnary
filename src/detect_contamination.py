@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from src import data_processing as dp 
 
-def detect_contamination(motifs_scored_in_bins, motifs_of_interest, args):
+def detect_contamination(motifs_scored_in_bins, args):
     """
     Takes the bin_motif_binary and motifs_scored_in_bins DataFrames and performs the contamination detection analysis.
     Firstly bin_motif_binary is used to create a binary representation of the methylation status of each motif in each bin.
@@ -21,7 +21,6 @@ def detect_contamination(motifs_scored_in_bins, motifs_of_interest, args):
     
     motif_binary_compare = dp.calculate_binary_motif_comparison_matrix(
         motifs_scored_in_bins[~motifs_scored_in_bins["bin_contig"].str.contains("unbinned")],
-        motifs_of_interest,
         args
     )
     

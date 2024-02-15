@@ -37,10 +37,9 @@ def generate_output(output_df, output_path):
     output_df.to_csv(output_path, sep="\t", index=False)
 
 
-# TODO: rename - filter bin consensus motifs calculate_binary_methylation_bin_consensus
 def calculate_binary_methylation_bin_consensus_from_bin_motifs(bin_motifs, args):
     """
-    Prepares the bin_motifs_binary DataFrame by calculating the mean methylation per bin and motif_mod and converting it to binary.    
+    Prepares the bin_consensus_from_bin_motifs DataFrame by calculating the mean methylation per bin and motif_mod and converting it to binary.    
     """
     # Combine 'motif' and 'mod_type' into 'motif_mod'
     bin_motifs["motif_mod"] = bin_motifs["motif"] + "_" + bin_motifs["mod_type"]
@@ -104,9 +103,9 @@ def prepare_motifs_scored_in_bins(motifs_scored, motifs_of_interest, contig_bins
     return motifs_scored_in_bins
 
 
-def remove_ambiguous_motifs_from_bin_consensus(motifs_scored_in_bins, motifs_of_interest, args):
+def remove_ambiguous_motifs_from_bin_consensus(motifs_scored_in_bins, args):
     # Remove motifs in bins where the majority of the mean methylation of motifs is in the range of 0.05-0.4
-    contig_motif_mean_density = motifs_scored_in_bins[(motifs_scored_in_bins["bin"] != "unbinned") & motifs_scored_in_bins["motif_mod"].isin(motifs_of_interest)].copy()
+    contig_motif_mean_density = motifs_scored_in_bins[(motifs_scored_in_bins["bin"] != "unbinned")].copy()
     contig_motif_mean_density["is_ambiguous"] = (contig_motif_mean_density["mean"] > 0.05) & (contig_motif_mean_density["mean"] < 0.4)
 
     # Count the number of ambiguous motifs per bin
@@ -129,17 +128,17 @@ def remove_ambiguous_motifs_from_bin_consensus(motifs_scored_in_bins, motifs_of_
 
 
 # TODO: rename - calculate_bin_consensus_from_contigs
-def construct_bin_motifs_from_motifs_scored_in_bins(motifs_scored_in_bins, motifs_of_interest, args):
+def construct_bin_motifs_from_motifs_scored_in_bins(motifs_scored_in_bins, args):
     """
     Constructs the bin_motifs_from_motifs_scored_in_bins DataFrame by filtering motifs that are not in bin_motif_binary,
     """
     
     # Remove motifs in bins where the majority of the mean methylation of motifs is in the range of 0.05-0.4
-    bin_consensus_without_ambiguous_motifs = remove_ambiguous_motifs_from_bin_consensus(motifs_scored_in_bins, motifs_of_interest, args)
+    bin_consensus_without_ambiguous_motifs = remove_ambiguous_motifs_from_bin_consensus(motifs_scored_in_bins, args)
     
     
     # Find n_motifs in bin TODO: rename bin_motifs_from_motifs_scored_in_bins to bin_consensus_from_motifs_scored_in_bins
-    bin_motifs_from_motifs_scored_in_bins = motifs_scored_in_bins[(motifs_scored_in_bins["bin"] != "unbinned") & motifs_scored_in_bins["motif_mod"].isin(motifs_of_interest) ]\
+    bin_motifs_from_motifs_scored_in_bins = motifs_scored_in_bins[(motifs_scored_in_bins["bin"] != "unbinned")]\
         .groupby(["bin", "motif_mod"])[["n_mod", "n_nomod"]]\
         .sum()\
         .reset_index()
@@ -157,8 +156,7 @@ def construct_bin_motifs_from_motifs_scored_in_bins(motifs_scored_in_bins, motif
 
     # Calculate standard deviation of methylation per bin and motif_mod
     bin_motifs_mean_and_sd = motifs_scored_in_bins[
-        (motifs_scored_in_bins["bin"] != "unbinned") & 
-        motifs_scored_in_bins["motif_mod"].isin(motifs_of_interest) & 
+        (motifs_scored_in_bins["bin"] != "unbinned") &  
         (motifs_scored_in_bins["mean"] > 0.1) &                                 # TODO: Remove this line if the negative cases should be used to determine methylation pattern.
         (motifs_scored_in_bins["n_motifs"] > args.n_motif_contig_cutoff)
         ] \
@@ -188,11 +186,10 @@ def construct_bin_motifs_from_motifs_scored_in_bins(motifs_scored_in_bins, motif
     return bin_motifs_from_motifs_scored_in_bins
     
 
-def calculate_binary_motif_comparison_matrix(motifs_scored_in_bins, motifs_of_interest, args):
+def calculate_binary_motif_comparison_matrix(motifs_scored_in_bins, args):
     # Step 1 create bin_motif_from_motifs_scored_in_bins - basis for bin-contig comparison
     bin_motifs_from_motifs_scored_in_bins = construct_bin_motifs_from_motifs_scored_in_bins(
         motifs_scored_in_bins,
-        motifs_of_interest,
         args
     )
     

@@ -40,12 +40,12 @@ def main(args):
     # Functions from the analysis module
     if args.command == "detect_contamination":
         analysis_results = detect_contamination.detect_contamination(
-            motifs_scored_in_bins, motifs_in_bin_consensus, args
+            motifs_scored_in_bins, args
         )
 
     if args.command == "include_contigs":
         analysis_results = include_contigs.include_contigs(
-            motifs_scored_in_bins, motifs_in_bin_consensus, args
+            motifs_scored_in_bins, args
         )
     
     
