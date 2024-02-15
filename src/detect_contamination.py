@@ -26,14 +26,6 @@ def detect_contamination(motifs_scored_in_bins, motifs_of_interest, args):
         args
     )
     
-    # Create contig motifs binary
-    # contig_motif_binary = dp.construct_contig_motif_binary(
-    #     motifs_scored_in_bins, 
-    #     motifs_of_interest, 
-    #     args.mean_methylation_cutoff-0.15, 
-    #     args.n_motif_cutoff
-    # )
-    
     ## Filter motifs that are not in bin_motif_binary
     motifs_scored_in_contigs = motifs_scored_in_bins[motifs_scored_in_bins["motif_mod"].isin(motifs_of_interest)]
     
@@ -53,33 +45,25 @@ def detect_contamination(motifs_scored_in_bins, motifs_of_interest, args):
         bin_motifs_from_motifs_scored_in_bins, motifs_scored_in_contigs, on="motif_mod"
     )
     
-    # Add methylation binary based on mean and standard deviation in motif_binary_compare
-    # motif_binary_compare["methylation_binary_compare"] = np.where(
-    #     motif_binary_compare["methylation_binary"] == 0, # If motif is not methylated in bin
-    #     (motif_binary_compare["mean"] >= 0.25).astype(int), # If motif is not methylated in bin, then it is methylated in contig if mean >= 0.25
-    #     (motif_binary_compare["mean"] >= np.maximum(motif_binary_compare["mean_methylation"] - 4 * motif_binary_compare["std_methylation_bin"], 0.07)).astype(int)
-    #     #(motif_binary_compare["mean"] >= motif_binary_compare["mean_methylation"] - 4 * motif_binary_compare["std_methylation_bin"]).astype(int) # If motif is methylated in bin, then it is methylated in contig if mean >= mean_methylation - 4*std_methylation_bin
-    # )
     
     # Calculate the mean methylation value for each motif in each bin
-    
-    motif_binary_compare["methylation_mean_minimum"] = np.where(
+    motif_binary_compare["methylation_mean_threshold"] = np.where(
         motif_binary_compare["methylation_binary"] == 1,
-        np.maximum(motif_binary_compare["mean_methylation"] - 4 * motif_binary_compare["std_methylation_bin"], 0.07),
-        np.nan  # Or some other default value for rows where "methylation_binary" is not 1
+        np.maximum(motif_binary_compare["mean_methylation"] - 4 * motif_binary_compare["std_methylation_bin"], 0.1),
+        np.nan
     )
     
     motif_binary_compare["methylation_binary_compare"] = np.where(
         motif_binary_compare["methylation_binary"] == 1,
-        (motif_binary_compare["mean"] >= motif_binary_compare["methylation_mean_minimum"]).astype(int),
-        np.nan  # Or some other default value for rows where "methylation_binary" is not 1
+        (motif_binary_compare["mean"] >= motif_binary_compare["methylation_mean_threshold"]).astype(int),
+        np.nan
     )
     
     
-    motif_binary_compare["methylation_mean_minimum"] = np.where(
+    motif_binary_compare["methylation_mean_threshold"] = np.where(
         motif_binary_compare["methylation_binary"] == 0,
         0.25,
-        motif_binary_compare["methylation_mean_minimum"]
+        motif_binary_compare["methylation_mean_threshold"]
     )
     
     motif_binary_compare["methylation_binary_compare"] = np.where(
@@ -88,7 +72,6 @@ def detect_contamination(motifs_scored_in_bins, motifs_of_interest, args):
         motif_binary_compare["methylation_binary_compare"]
     )
     
-    motif_binary_compare.to_csv("motif_binary_compare.tsv", index=False, sep="\t")
     
     # Define the corresponding choices for each condition
     choices = [
@@ -101,7 +84,6 @@ def detect_contamination(motifs_scored_in_bins, motifs_of_interest, args):
     ]
 
     contig_bin_comparison_score = dp.compare_methylation_pattern(motif_binary_compare, choices)
-    contig_bin_comparison_score.to_csv("contig_bin_comparison_score.tsv", index=False, sep="\t")
     
     # Filter contig_bin == bin and contig_bin_comparison_score > 0
     contamination_contigs = contig_bin_comparison_score[
@@ -110,9 +92,7 @@ def detect_contamination(motifs_scored_in_bins, motifs_of_interest, args):
         (contig_bin_comparison_score["binary_methylation_missmatch_score"] > 0)
     ]
     
-    contamination_contigs.to_csv("contamination_contigs.tsv", index=False, sep="\t")
-    
-    # contigs_w_no_methylation = contig_motif_binary[contig_motif_binary.groupby("bin_compare")["methylation_binary_compare"].transform("sum") == 0]["bin_compare"].unique()
+    # Find contigs with no methylation
     contigs_w_no_methylation = motif_binary_compare[
         motif_binary_compare.groupby("bin_compare")["methylation_binary_compare"].transform("sum") == 0
     ]["bin_compare"].unique()
