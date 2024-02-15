@@ -37,6 +37,37 @@ def generate_output(output_df, output_path):
     output_df.to_csv(output_path, sep="\t", index=False)
 
 
+
+def prepare_bin_motifs_binary(bin_motifs, args):
+    """
+    Prepares the bin_motifs_binary DataFrame by calculating the mean methylation per bin and motif_mod and converting it to binary.    
+    """
+    # Combine 'motif' and 'mod_type' into 'motif_mod'
+    bin_motifs["motif_mod"] = bin_motifs["motif"] + "_" + bin_motifs["mod_type"]
+
+    # Calculate total motifs and mean methylation
+    bin_motifs["n_motifs"] = bin_motifs["n_mod_bin"] + bin_motifs["n_nomod_bin"]
+    bin_motifs["mean_methylation"] = bin_motifs["n_mod_bin"] / bin_motifs["n_motifs"]
+
+    # Create 'methylation_binary' column based on mean methylation cutoff
+    bin_motifs["methylation_binary"] = (bin_motifs["mean_methylation"] >= args.mean_methylation_cutoff).astype(int)
+
+    # filter motifs that are not observed more than n_motif_bin_cutoff times
+    bin_motifs = bin_motifs[bin_motifs["n_motifs"] >= args.n_motif_bin_cutoff]
+    
+    # Filter for rows where 'methylation_binary' is 1 and select relevant columns
+    bin_motif_binary = bin_motifs[bin_motifs["methylation_binary"] == 1][["bin", "motif_mod", "mean_methylation", "methylation_binary"]]
+    
+    ## Step 4: Create a binary index for bin and motif_mod
+    bin_motif_binary_index = pd.MultiIndex.from_product([bin_motif_binary["bin"].unique(), bin_motif_binary["motif_mod"].unique()], names=['bin', 'motif_mod'])
+
+    bin_motif_binary = bin_motif_binary.set_index(["bin", "motif_mod"])
+
+    bin_motif_binary = bin_motif_binary.reindex(bin_motif_binary_index, fill_value=0).reset_index()
+    
+    return bin_motif_binary
+
+
 def prepare_motifs_scored_in_bins(motifs_scored, motifs_of_interest, contig_bins, assembly_stats):
     """
     Prepares the motifs_scored_in_bins DataFrame by merging with bin motifs, contig bins, and assembly stats,
@@ -71,36 +102,6 @@ def prepare_motifs_scored_in_bins(motifs_scored, motifs_of_interest, contig_bins
 
     
     return motifs_scored_in_bins
-
-
-def prepare_bin_motifs_binary(bin_motifs, args):
-    """
-    Prepares the bin_motifs_binary DataFrame by calculating the mean methylation per bin and motif_mod and converting it to binary.    
-    """
-    # Combine 'motif' and 'mod_type' into 'motif_mod'
-    bin_motifs["motif_mod"] = bin_motifs["motif"] + "_" + bin_motifs["mod_type"]
-
-    # Calculate total motifs and mean methylation
-    bin_motifs["n_motifs"] = bin_motifs["n_mod_bin"] + bin_motifs["n_nomod_bin"]
-    bin_motifs["mean_methylation"] = bin_motifs["n_mod_bin"] / bin_motifs["n_motifs"]
-
-    # Create 'methylation_binary' column based on mean methylation cutoff
-    bin_motifs["methylation_binary"] = (bin_motifs["mean_methylation"] >= args.mean_methylation_cutoff).astype(int)
-
-    # filter motifs that are not observed more than n_motif_bin_cutoff times
-    bin_motifs = bin_motifs[bin_motifs["n_motifs"] >= args.n_motif_bin_cutoff]
-    
-    # Filter for rows where 'methylation_binary' is 1 and select relevant columns
-    bin_motif_binary = bin_motifs[bin_motifs["methylation_binary"] == 1][["bin", "motif_mod", "mean_methylation", "methylation_binary"]]
-    
-    ## Step 4: Create a binary index for bin and motif_mod
-    bin_motif_binary_index = pd.MultiIndex.from_product([bin_motif_binary["bin"].unique(), bin_motif_binary["motif_mod"].unique()], names=['bin', 'motif_mod'])
-
-    bin_motif_binary = bin_motif_binary.set_index(["bin", "motif_mod"])
-
-    bin_motif_binary = bin_motif_binary.reindex(bin_motif_binary_index, fill_value=0).reset_index()
-    
-    return bin_motif_binary
 
 
 def construct_bin_motifs_from_motifs_scored_in_bins(motifs_scored_in_bins, motifs_of_interest, args):
