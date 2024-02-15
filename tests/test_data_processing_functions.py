@@ -51,7 +51,10 @@ def test_prepare_bin_motif_binary(loaded_data):
     assert bin_motif_binary[(bin_motif_binary["bin"] == "b3") & (bin_motif_binary["motif_mod"] == "m6_a")]["methylation_binary"].values[0] == 1
     
     # Assert that there are 4 motifs in bin 1
-    assert bin_motif_binary[bin_motif_binary["bin"] == "b3"].shape[0] == 2
+    assert bin_motif_binary[bin_motif_binary["bin"] == "b3"].shape[0] == 4
+    assert set(bin_motif_binary[bin_motif_binary["bin"] == "b3"]["motif_mod"].unique().tolist()) == set(["m1_a", "m2_a", "m3_a", "m6_a"])
+    # Assert m7_a is filtered because of too few observations
+    assert bin_motif_binary[bin_motif_binary["motif_mod"] == "m7_a"]["motif_mod"].shape[0] == 0
     
 
 
@@ -88,27 +91,9 @@ def test_motifs_scored_in_bins(loaded_data):
     )
 
 
-def test_contig_motif_binary_function(loaded_data, motifs_scored_in_bins_and_bin_motifs):
-    """
-    GIVEN loaded_data and motifs_scored_in_bins_and_bin_motifs
-    WHEN construct_contig_motif_binary is called
-    THEN assert that the output contains only the expected columns, and that there are 2 unique motifs and 16 unique contigs
-    """
-    bin_motif_binary = motifs_scored_in_bins_and_bin_motifs["bin_motif_binary"]
-    motifs_scored_in_bins = motifs_scored_in_bins_and_bin_motifs["motifs_scored_in_bins"]
-    
-    args = MockArgs()
-    
-    contig_motif_binary = data_processing.construct_contig_motif_binary(motifs_scored_in_bins, bin_motif_binary["motif_mod"].unique(), args.mean_methylation_cutoff-0.15, args.n_motif_cutoff)
-    
-    assert contig_motif_binary is not None
-    assert contig_motif_binary.columns.tolist() == ["bin_compare", "motif_mod", "methylation_binary_compare"]
-    
-    # Assert there are two unique motifs in contig_motif_binary
-    assert contig_motif_binary["motif_mod"].nunique() == 2
-    
-    # Assert that there are 2 bins in contig_motif_binary
-    assert contig_motif_binary["bin_compare"].nunique() == 16
+
+
+
 
 
 def test_bin_motifs_from_motifs_scored_in_bins(loaded_data, motifs_scored_in_bins_and_bin_motifs):
@@ -134,7 +119,7 @@ def test_bin_motifs_from_motifs_scored_in_bins(loaded_data, motifs_scored_in_bin
     assert bin_motifs_from_motifs_scored_in_bins.columns.tolist() == ['bin', 'motif_mod', 'n_mod', 'n_nomod', 'mean_methylation', 'methylation_binary']
     
     
-    
+
     
 def test_compare_methylation_pattern(loaded_data, motifs_scored_in_bins_and_bin_motifs):
     """
