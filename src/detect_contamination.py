@@ -17,59 +17,12 @@ def detect_contamination(motifs_scored_in_bins, motifs_of_interest, args):
         motifs_scored_in_bins: pd.DataFrame - DataFrame containing the motifs scored in each bin
         motifs_of_interest: list - List of motifs to be considered from bin_motif_binary
         args: argparse.Namespace - Namespace containing the arguments passed to the script
-    
     """
-    # Step 1 create bin_motif_from_motifs_scored_in_bins - basis for bin-contig comparison
-    bin_motifs_from_motifs_scored_in_bins = dp.construct_bin_motifs_from_motifs_scored_in_bins(
-        motifs_scored_in_bins,
+    
+    motif_binary_compare = dp.calculate_binary_motif_comparison_matrix(
+        motifs_scored_in_bins[~motifs_scored_in_bins["bin_contig"].str.contains("unbinned")],
         motifs_of_interest,
         args
-    )
-    
-    ## Filter motifs that are not in bin_motif_binary
-    motifs_scored_in_contigs = motifs_scored_in_bins[motifs_scored_in_bins["motif_mod"].isin(motifs_of_interest)]
-    
-    # Remove unbinned motifs
-    motifs_scored_in_contigs = motifs_scored_in_contigs[~motifs_scored_in_contigs["bin_contig"].str.contains("unbinned")]
-    
-    ## Filter motifs that are not observed more than n_motif_cutoff times
-    motifs_scored_in_contigs = motifs_scored_in_contigs[motifs_scored_in_contigs["n_motifs"] >= args.n_motif_contig_cutoff]   
-    
-    ## Rename bin_contig to bin
-    motifs_scored_in_contigs = motifs_scored_in_contigs[["bin_contig", "motif_mod", "mean"]]
-    motifs_scored_in_contigs.rename(columns={"bin_contig": "bin_compare"}, inplace=True)
-    
-
-    # Merge bin_motifs_from_motifs_scored_in_bins and motifs_scored_in_contigs    
-    motif_binary_compare = pd.merge(
-        bin_motifs_from_motifs_scored_in_bins, motifs_scored_in_contigs, on="motif_mod"
-    )
-    
-    
-    # Calculate the mean methylation value for each motif in each bin
-    motif_binary_compare["methylation_mean_threshold"] = np.where(
-        motif_binary_compare["methylation_binary"] == 1,
-        np.maximum(motif_binary_compare["mean_methylation"] - 4 * motif_binary_compare["std_methylation_bin"], 0.1),
-        np.nan
-    )
-    
-    motif_binary_compare["methylation_binary_compare"] = np.where(
-        motif_binary_compare["methylation_binary"] == 1,
-        (motif_binary_compare["mean"] >= motif_binary_compare["methylation_mean_threshold"]).astype(int),
-        np.nan
-    )
-    
-    
-    motif_binary_compare["methylation_mean_threshold"] = np.where(
-        motif_binary_compare["methylation_binary"] == 0,
-        0.25,
-        motif_binary_compare["methylation_mean_threshold"]
-    )
-    
-    motif_binary_compare["methylation_binary_compare"] = np.where(
-        motif_binary_compare["methylation_binary"] == 0,
-        (motif_binary_compare["mean"] >= 0.25).astype(int),
-        motif_binary_compare["methylation_binary_compare"]
     )
     
     
