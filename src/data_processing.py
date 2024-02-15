@@ -13,11 +13,6 @@ def load_data(args):
     contig_bins = pd.read_csv(args.contig_bins, delimiter = "\t", header = None)
     assembly_stats = pd.read_csv(args.assembly_stats, delimiter = "\t")
     
-    
-    # print("Loading assembly file...")
-    # assembly_file = read_fasta(args.assembly_file)
-    # print("Assembly file loaded.")    
-
     # Perform any additional preprocessing steps here
     # Change colnames of contig_bins
     contig_bins.columns = ["contig", "bin"]
@@ -26,10 +21,6 @@ def load_data(args):
     assembly_stats.rename(columns={assembly_stats.columns[0]: "contig"}, inplace=True)
     
     return motifs_scored, bin_motifs, contig_bins, assembly_stats
-
-
-def read_fasta(file_path):
-    return {record.id: str(record.seq) for record in SeqIO.parse(file_path, "fasta")}
 
 
 
@@ -134,7 +125,7 @@ def construct_bin_motifs_from_motifs_scored_in_bins(motifs_scored_in_bins, motif
     bin_motifs_mean_and_sd = motifs_scored_in_bins[
         (motifs_scored_in_bins["bin"] != "unbinned") & 
         motifs_scored_in_bins["motif_mod"].isin(motifs_of_interest) & 
-        (motifs_scored_in_bins["mean"] > 0.1) &
+        (motifs_scored_in_bins["mean"] > 0.1) &                                 # TODO: Remove this line if the negative cases should be used to determine methylation pattern.
         (motifs_scored_in_bins["n_motifs"] > args.n_motif_contig_cutoff)
         ] \
         .groupby(["bin", "motif_mod"]).agg(
@@ -161,7 +152,7 @@ def construct_bin_motifs_from_motifs_scored_in_bins(motifs_scored_in_bins, motif
 
     # NOTE This makes us unable to find some contigs, which should be included in the analysis
     # ## Remove bins that has no methylated motifs
-    bin_motifs_from_motifs_scored_in_bins = bin_motifs_from_motifs_scored_in_bins.groupby("bin").filter(lambda x: x["methylation_binary"].sum() > 0)
+    # bin_motifs_from_motifs_scored_in_bins = bin_motifs_from_motifs_scored_in_bins.groupby("bin").filter(lambda x: x["methylation_binary"].sum() > 0)
     
     return bin_motifs_from_motifs_scored_in_bins
     
