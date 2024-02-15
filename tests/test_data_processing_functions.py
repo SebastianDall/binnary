@@ -91,11 +91,6 @@ def test_motifs_scored_in_bins(loaded_data):
     )
 
 
-
-
-
-
-
 def test_bin_motifs_from_motifs_scored_in_bins(loaded_data, motifs_scored_in_bins_and_bin_motifs):
     """
     GIVEN loaded_data and motifs_scored_in_bins_and_bin_motifs
@@ -113,13 +108,39 @@ def test_bin_motifs_from_motifs_scored_in_bins(loaded_data, motifs_scored_in_bin
         args
     )
     
-    print(bin_motifs_from_motifs_scored_in_bins.columns.tolist())
-    
     assert bin_motifs_from_motifs_scored_in_bins is not None
-    assert bin_motifs_from_motifs_scored_in_bins.columns.tolist() == ['bin', 'motif_mod', 'n_mod', 'n_nomod', 'mean_methylation', 'methylation_binary']
+    assert bin_motifs_from_motifs_scored_in_bins.columns.tolist() == ['bin', 'motif_mod', 'n_mod', 'n_nomod', 'n_motifs_bin', 'mean_methylation', 'mean_methylation_bin', 'std_methylation_bin', 'n_contigs', 'methylation_binary']
     
     
-
+def test_calculate_binary_motif_comparison_matrix(loaded_data, motifs_scored_in_bins_and_bin_motifs):
+    """
+    GIVEN loaded_data and motifs_scored_in_bins_and_bin_motifs
+    WHEN calculate_binary_motif_comparison_matrix is called
+    THEN assert that the output contains only the expected columns
+    """
+    bin_motif_binary = motifs_scored_in_bins_and_bin_motifs["bin_motif_binary"]
+    motifs_scored_in_bins = motifs_scored_in_bins_and_bin_motifs["motifs_scored_in_bins"]
+    
+    args = MockArgs()
+    
+    motifs_of_interest = bin_motif_binary["motif_mod"].unique()
+    
+    motif_binary_compare = data_processing.calculate_binary_motif_comparison_matrix(
+        motifs_scored_in_bins[~motifs_scored_in_bins["bin_contig"].str.contains("unbinned")],
+        motifs_of_interest,
+        args
+    )
+    
+    assert motif_binary_compare is not None
+    # Assert that no bin_contig contains "unbinned"
+    assert motif_binary_compare["bin_compare"].str.contains("unbinned").sum() == 0
+    
+    b3 = motif_binary_compare[(motif_binary_compare["bin"] == "b3") & (motif_binary_compare["bin_compare"].str.contains("b3"))]
+    print(b3.head(20))
+    
+    assert set(b3["motif_mod"].unique()) == set(["m1_a", "m2_a", "m3_a", "m6_a"])
+    assert b3[b3["motif_mod"] == "m6_a"]["methylation_binary"].values[0] == 1.0
+    assert b3[b3["motif_mod"] == "m2_a"]["methylation_binary"].values[0] == 0.0
     
 def test_compare_methylation_pattern(loaded_data, motifs_scored_in_bins_and_bin_motifs):
     """
@@ -132,22 +153,10 @@ def test_compare_methylation_pattern(loaded_data, motifs_scored_in_bins_and_bin_
     
     motifs_of_interest = bin_motif_binary["motif_mod"].unique()
     
-    contig_motif_binary = data_processing.construct_contig_motif_binary(
-        motifs_scored_in_bins, 
-        motifs_of_interest,
-        args.mean_methylation_cutoff-0.15, 
-        args.n_motif_cutoff
-    )
-    
-    bin_motifs_from_motifs_scored_in_bins = data_processing.construct_bin_motifs_from_motifs_scored_in_bins(
-        motifs_scored_in_bins,
+    motif_binary_compare = data_processing.calculate_binary_motif_comparison_matrix(
+        motifs_scored_in_bins[~motifs_scored_in_bins["bin_contig"].str.contains("unbinned")],
         motifs_of_interest,
         args
-    )
-    
-     # Merge bin_motifs_from_motifs_scored_in_bins and contig_motif_binary    
-    motif_binary_compare = pd.merge(
-        bin_motifs_from_motifs_scored_in_bins, contig_motif_binary, on="motif_mod"
     )
     
     # Define the corresponding choices for each condition
@@ -162,11 +171,8 @@ def test_compare_methylation_pattern(loaded_data, motifs_scored_in_bins_and_bin_
     
     contig_bin_comparison_score = data_processing.compare_methylation_pattern(motif_binary_compare, choices)
     
-    print("\n")
-    print(contig_bin_comparison_score)
-    
     assert contig_bin_comparison_score is not None
-    assert set(contig_bin_comparison_score["bin"].unique()) == {"b2", "b3"}
-    assert len(contig_bin_comparison_score["contig"].unique()) == 16
-    assert contig_bin_comparison_score[(contig_bin_comparison_score["bin"] == "b2") & (contig_bin_comparison_score["contig"] == "contig_14")]["binary_methylation_missmatch_score"].values[0] == 0
+    assert set(contig_bin_comparison_score["bin"].unique()) == {'b1', 'b2', 'b3', 'b4'}
+    assert len(contig_bin_comparison_score["contig"].unique()) == 14
+    assert contig_bin_comparison_score[(contig_bin_comparison_score["bin"] == "b2") & (contig_bin_comparison_score["contig"] == "contig_4")]["binary_methylation_missmatch_score"].values[0] == 0
     

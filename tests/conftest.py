@@ -3,13 +3,14 @@ from src import data_processing
 
 class MockArgs:
     def __init__(self):
-        self.motifs_scored = "data/motifs-scored.tsv"
-        self.bin_motifs = "data/bin-motifs.tsv"
-        self.contig_bins = "data/bins.tsv"
-        self.assembly_stats = "data/assembly_info.txt"
-        # self.assembly_file = "data/assembly_file.fasta"
-        self.mean_methylation_cutoff = 0.75
-        self.n_motif_cutoff = 6
+        self.motifs_scored = "data/test_data/motifs-scored.tsv"
+        self.bin_motifs = "data/test_data/bin-motifs.tsv"
+        self.contig_bins = "data/test_data/bins.tsv"
+        self.assembly_stats = "data/test_data/assembly_info.txt"
+        self.mean_methylation_cutoff = 0.25
+        self.n_motif_bin_cutoff = 500
+        self.n_motif_contig_cutoff = 10
+        self.ambiguous_motif_percentage_cutoff = 0.40
 
 @pytest.fixture(scope="session")
 def loaded_data():
@@ -28,7 +29,6 @@ def loaded_data():
         "bin_motifs": bin_motifs,
         "contig_bins": contig_bins,
         "assembly_stats": assembly_stats
-        # "assembly_file": assembly_file
     }
     
     
