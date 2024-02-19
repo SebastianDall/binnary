@@ -44,8 +44,19 @@ def main(args):
         )
 
     if args.command == "include_contigs":
+        # Run the contamination detection if the user has provided the flag
+        if args.run_detect_contamination:
+            print("Running contamination detection...")
+            contamination = detect_contamination.detect_contamination(
+                motifs_scored_in_bins, args
+            )
+        # User provided contamination file
+        if args.contamination_file:
+            print("Loading contamination file...")
+            contamination = data_processing.load_contamination_file(args.contamination_file)
+            
         analysis_results = include_contigs.include_contigs(
-            motifs_scored_in_bins, args
+            motifs_scored_in_bins, contamination, args
         )
     
     
