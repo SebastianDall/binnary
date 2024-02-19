@@ -11,6 +11,16 @@ def main(args):
     Main entry point for the DNA Methylation Pattern Analysis tool.
     Orchestrates the workflow of the tool based on the provided arguments.
     """
+    
+    # Conditional check for --write_bins and --assembly_file
+    if args.command == "include_contigs":
+        if args.write_bins and not args.assembly_file:
+            print("Error: --assembly_file must be specified when --write_bins is used.")
+            sys.exit(1)
+        elif not args.write_bins and args.assembly_file:
+            print("Error: --assembly_file can only be used when --write_bins is specified.")
+            sys.exit(1)
+    
     print("Starting Binnary ", args.command, " analysis...")
 
     # Step 1: Load and preprocess data
@@ -56,11 +66,23 @@ def main(args):
             motifs_scored_in_bins, contamination, args
         )
         
-        # Create a new contig_bin file
-        data_processing.create_contig_bin_file(contig_bins, include_contigs_df, contamination, args.out)
-        
         # Save the include_contigs_df results
         data_processing.generate_output(include_contigs_df, args.out, "include_contigs.tsv")
+        
+        # Create a new contig_bin file
+        new_contig_bins = data_processing.create_contig_bin_file(contig_bins, include_contigs_df, contamination)
+        data_processing.generate_output(new_contig_bins, args.out, "decontaminated_contig_bins_with_include.tsv")
+        
+        if args.write_bins:
+            print("Loading assembly file...")
+            assembly = data_processing.read_fasta(args.assembly_file)
+            
+            print(f"Writing bins to {args.out}/bins/...")
+            data_processing.write_bins_from_contigs(new_contig_bins, assembly, args.out)
+            
+            
+            
+            
     
     
     print("Analysis Completed. Results are saved to:", args.out)
