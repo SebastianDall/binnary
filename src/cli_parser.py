@@ -4,14 +4,14 @@ import argparse
 def add_common_arguments(subparser):
     """Function to add common arguments to a subparser."""
     subparser.add_argument(
-        "--motifs_scored", type=str, help="Path to motifs-scored.tsv from nanomotif"
+        "--motifs_scored", type=str, help="Path to motifs-scored.tsv from nanomotif", required=True
     )
-    subparser.add_argument("--bin_motifs", type=str, help="Path to bin-motifs.tsv file")
+    subparser.add_argument("--bin_motifs", type=str, help="Path to bin-motifs.tsv file", required=True)
     subparser.add_argument(
-        "--contig_bins", type=str, help="Path to bins.tsv file for contig bins"
+        "--contig_bins", type=str, help="Path to bins.tsv file for contig bins", required=True
     )
     subparser.add_argument(
-        "--assembly_stats", type=str, help="Path to assembly_info.txt file"
+        "--assembly_stats", type=str, help="Path to assembly_info.txt file", required=True
     )
     # subparser.add_argument("--assembly_file", type=str, help="Path to assembly.fasta file")
     subparser.add_argument(
@@ -39,7 +39,7 @@ def add_common_arguments(subparser):
         default=0.40,
         help="Percentage of ambiguous motifs defined as mean methylation between 0.05 and 0.40 in a bin. Motifs with an ambiguous methylation percentage of more than this value are removed from scoring. Default is 0.40",
     )
-    subparser.add_argument("--out", type=str, help="Path to output filename")
+    subparser.add_argument("--out", type=str, help="Path to output filename", required=True)
 
 
 def get_parser():
@@ -52,5 +52,23 @@ def get_parser():
     for command in commands:
         subparser = subparsers.add_parser(command, help=f"{command} help")
         add_common_arguments(subparser)  # Add common arguments to each subparser
+        
+        if command == "include_contigs":
+             # Create a mutually exclusive group within the include_contigs subparser
+            group = subparser.add_mutually_exclusive_group(required=True)
+            
+            # Option for providing an existing file
+            group.add_argument(
+                "--contamination_file",
+                type=str,
+                help="Path to an existing contamination file to include in the analysis"
+            )
+
+            # Option to indicate that the detect_contamination workflow should be run
+            group.add_argument(
+                "--run_detect_contamination",
+                action='store_true',
+                help="Indicate that the detect_contamination workflow should be run first"
+            )
 
     return parser
