@@ -38,35 +38,31 @@ def main(args):
     )
 
     # Functions from the analysis module
-    if args.command == "detect_contamination":
-        analysis_results = detect_contamination.detect_contamination(
+    if args.command == "detect_contamination" or (args.command == "include_contigs" and args.run_detect_contamination):
+        contamination = detect_contamination.detect_contamination(
             motifs_scored_in_bins, args
         )
+        data_processing.generate_output(contamination, args.out, "bin_contamination.tsv")
+        
 
     if args.command == "include_contigs":
-        # Run the contamination detection if the user has provided the flag
-        if args.run_detect_contamination:
-            print("Running contamination detection...")
-            contamination = detect_contamination.detect_contamination(
-                motifs_scored_in_bins, args
-            )
         # User provided contamination file
         if args.contamination_file:
             print("Loading contamination file...")
             contamination = data_processing.load_contamination_file(args.contamination_file)
         
         # Run the include_contigs analysis    
-        analysis_results = include_contigs.include_contigs(
+        include_contigs_df = include_contigs.include_contigs(
             motifs_scored_in_bins, contamination, args
         )
         
         # Create a new contig_bin file
-        data_processing.create_contig_bin_file(contig_bins, analysis_results, contamination, "decontaminated_contig_bins.tsv")
+        data_processing.create_contig_bin_file(contig_bins, include_contigs_df, contamination, args.out)
         
+        # Save the include_contigs_df results
+        data_processing.generate_output(include_contigs_df, args.out, "include_contigs.tsv")
     
     
-    # Step 3: Post-analysis processing and output generation
-    data_processing.generate_output(analysis_results, args.out)
     print("Analysis Completed. Results are saved to:", args.out)
 
 

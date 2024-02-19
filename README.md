@@ -47,7 +47,7 @@ To run a test, run the following command:
     --contig_bins data/PaPr00000216MP_nm_0.1.18/bins.tsv \
     --assembly_stats data/PaPr00000216MP_nm_0.1.18/flye/assembly_info.txt \
     --n_motif_contig_cutoff 10 \
-    --out output/binnary-contamination-PaPr00000216MP_nm_0.1.18.tsv
+    --out output/PaPr00000216MP_nm_0.1.18
 ```
 --mean_methylation_cutoff 0.45 \
 ```bash
@@ -56,5 +56,6 @@ To run a test, run the following command:
     --bin_motifs data/PaPr00000216MP_nm_0.1.18/nanomotif/bin-motifs.tsv \
     --contig_bins data/PaPr00000216MP_nm_0.1.18/bins.tsv \
     --assembly_stats data/PaPr00000216MP_nm_0.1.18/flye/assembly_info.txt \
-    --out output/binnary-include-PaPr00000216MP_nm_0.1.18.tsv
+    --run_detect_contamination \
+    --out output/PaPr00000216MP_nm_0.1.18
 ```

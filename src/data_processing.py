@@ -24,17 +24,18 @@ def load_data(args):
 
 
 
-def generate_output(output_df, output_path, header=True):
+def generate_output(output_df, outdir, filename, header=True):
     """
     Generate the output files for the analysis.
     """
     # If the output directory does not exist, create it
-    output_dir = os.path.dirname(output_path)
-    if not os.path.exists(output_dir) and output_dir != "":
-        os.makedirs(output_dir)
-        
+    if not os.path.exists(outdir) and outdir != "":
+        os.makedirs(outdir)
+    
+    file_path = os.path.join(outdir, filename)
+    
     # Generate the output files
-    output_df.to_csv(output_path, sep="\t", index=False, header=header)
+    output_df.to_csv(file_path, sep="\t", index=False, header=header)
 
 
 def calculate_binary_methylation_bin_consensus_from_bin_motifs(bin_motifs, args):
@@ -301,7 +302,7 @@ def load_contamination_file(contamination_file):
     return contamination
 
 
-def create_contig_bin_file(contig_bins, include, contamination, output_path):
+def create_contig_bin_file(contig_bins, include, contamination, output_dir):
     """
     Create a new contig_bin file based on the analysis results and contamination file.
     """
@@ -315,4 +316,4 @@ def create_contig_bin_file(contig_bins, include, contamination, output_path):
     contig_bins = contig_bins.sort_values(by=["bin", "contig"])
     
     # Generate the output file
-    generate_output(contig_bins, output_path, header=False)
+    generate_output(contig_bins, output_dir, "decontaminated_and_unbinned_contig_bins.tsv", header=False)
