@@ -40,10 +40,9 @@ def include_contigs(motifs_scored_in_bins, contamination, args):
     ]["bin_compare"].unique()
     
         
-    # TODO: should be contigs of interest not just unbinned contigs 
     contigs_of_interest = contig_bin_comparison_score[
         (contig_bin_comparison_score["bin_compare"].str.contains("unbinned")) |  # Retain unbinned contigs
-        (contig_bin_comparison_score["bin_compare"].isin(contamination["bin_contig_compare"])) # Retain contigs in the contamination file
+        (contig_bin_comparison_score["bin_compare"].isin(contamination["bin_contig_compare"])) # Retain contigs in the contamination file   
     ]
     
     
