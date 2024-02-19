@@ -193,11 +193,8 @@ def calculate_binary_motif_comparison_matrix(motifs_scored_in_bins, args):
         args
     )
     
-    # Remove unbinned motifs
-    motifs_scored_in_contigs = motifs_scored_in_bins[~motifs_scored_in_bins["bin_contig"].str.contains("unbinned")]
-    
     ## Filter motifs that are not observed more than n_motif_cutoff times
-    motifs_scored_in_contigs = motifs_scored_in_contigs[motifs_scored_in_contigs["n_motifs"] >= args.n_motif_contig_cutoff]   
+    motifs_scored_in_contigs = motifs_scored_in_bins[motifs_scored_in_bins["n_motifs"] >= args.n_motif_contig_cutoff]   
     
     ## Rename bin_contig to bin
     motifs_scored_in_contigs = motifs_scored_in_contigs[["bin_contig", "motif_mod", "mean"]]
