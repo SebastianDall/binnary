@@ -214,13 +214,17 @@ def calculate_binary_motif_comparison_matrix(motifs_scored_in_bins, args):
         np.nan
     )
     
+    # Calculate the binary methylation value for each motif in each bin where the bin consensus is 1.
+    # If the mean methylation is above the threshold OR the contig mean methylation is above 0.4, the motif is considered methylated in the contig.
     motif_binary_compare["methylation_binary_compare"] = np.where(
-        motif_binary_compare["methylation_binary"] == 1,
-        (motif_binary_compare["mean"] >= motif_binary_compare["methylation_mean_threshold"]).astype(int),
-        np.nan
+        (motif_binary_compare["methylation_binary"] == 1) & 
+        ((motif_binary_compare["mean"] >= motif_binary_compare["methylation_mean_threshold"]) | 
+        (motif_binary_compare["mean"] > 0.4)),
+        1,  # Methylated
+        np.where(motif_binary_compare["methylation_binary"] == 1, 0, np.nan)  # Unmethylated or NaN
     )
     
-    
+    # Calculate score for bin consensus is 0 
     motif_binary_compare["methylation_mean_threshold"] = np.where(
         motif_binary_compare["methylation_binary"] == 0,
         0.25,
