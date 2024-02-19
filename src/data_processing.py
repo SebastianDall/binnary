@@ -1,6 +1,9 @@
 import pandas as pd
 from Bio import SeqIO
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
 import numpy as np
+import gzip
 import os
 
 def load_data(args):
@@ -17,10 +20,69 @@ def load_data(args):
     # Change colnames of contig_bins
     contig_bins.columns = ["contig", "bin"]
     
+    
     # Rename the first column to 'contig'
     assembly_stats.rename(columns={assembly_stats.columns[0]: "contig"}, inplace=True)
     
     return motifs_scored, bin_motifs, contig_bins, assembly_stats
+
+def read_fasta(file_path):
+    # Check if the file exists
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"File not found: {file_path}")    
+    
+    # Check if the file has a valid FASTA extension
+    valid_extensions = ['.fasta', '.fa', '.fna', '.gz']
+    if not any(file_path.endswith(ext) for ext in valid_extensions):
+        raise ValueError(f"Unsupported file extension. Please provide a FASTA file with one of the following extensions: {', '.join(valid_extensions)}")
+
+    # Check if the file is a gzipped FASTA file
+    if file_path.endswith('.gz'):
+        with gzip.open(file_path, "rt") as handle:  # "rt" mode for reading as text
+            return {record.id: str(record.seq) for record in SeqIO.parse(handle, "fasta")}
+    else:
+        # Read a regular (uncompressed) FASTA file
+        with open(file_path, "r") as handle:
+            return {record.id: str(record.seq) for record in SeqIO.parse(handle, "fasta")}
+
+
+def write_bins_from_contigs(new_contig_bins, assembly_dict, output_dir):
+    """
+    Creates new bin files based on contig assignments in new_contig_bins DataFrame.
+
+    Args:
+    - new_contig_bins (DataFrame): DataFrame with contig and bin assignments.
+    - assembly_dict (dict): Dictionary with contig IDs as keys and sequences as values, from the assembly file.
+    - output_dir (str): Path to the directory where the new bin files will be saved.
+    """
+
+    # check if the output directory exists
+    output_bins_dir = os.path.join(output_dir, "bins")
+    if not os.path.exists(output_bins_dir):
+        os.makedirs(output_bins_dir)
+    
+    # Group the DataFrame by 'bin'
+    grouped = new_contig_bins.groupby('bin')
+
+    for bin_name, group in grouped:
+        # Initialize a list to hold SeqRecord objects for the current bin
+        bin_records = []
+
+        for contig in group['contig']:
+            # Create a SeqRecord object for each contig in the bin, if it exists in the assembly dictionary
+            if contig in assembly_dict:
+                seq_record = SeqRecord(Seq(assembly_dict[contig]), id=contig, description="")
+                bin_records.append(seq_record)
+
+        # Define the output file name for the current bin
+        output_file = f"{bin_name}.fa"
+        output_path = os.path.join(output_bins_dir, output_file)
+
+        # Write the SeqRecord objects to a FASTA file
+        with open(output_path, "w") as output_handle:
+            SeqIO.write(bin_records, output_handle, "fasta")
+
+        print(f"Written {len(bin_records)} contigs to {output_file}")
 
 
 
@@ -174,10 +236,6 @@ def construct_bin_motifs_from_motifs_scored_in_bins(motifs_scored_in_bins, args)
     # Merge with bin_motifs_from_motifs_scored_in_bins
     bin_motifs_from_motifs_scored_in_bins = bin_motifs_from_motifs_scored_in_bins.merge(bin_motifs_mean_and_sd, on=["bin", "motif_mod"], how="left")
     
-    
-    
-    # bin_motifs_from_motifs_scored_in_bins.to_csv("bin_motifs_from_motifs_scored_in_bins.tsv", index=False, sep="\t")
-    
     # TODO: Does this make sense? All motifs with mean_methylation above 0.25 is called as methylated.
     ## Convert mean methylation values to binary
     bin_motifs_from_motifs_scored_in_bins["methylation_binary"] = (
@@ -302,7 +360,7 @@ def load_contamination_file(contamination_file):
     return contamination
 
 
-def create_contig_bin_file(contig_bins, include, contamination, output_dir):
+def create_contig_bin_file(contig_bins, include, contamination):
     """
     Create a new contig_bin file based on the analysis results and contamination file.
     """
@@ -315,5 +373,4 @@ def create_contig_bin_file(contig_bins, include, contamination, output_dir):
     # Sort the contig_bins by bin and contig
     contig_bins = contig_bins.sort_values(by=["bin", "contig"])
     
-    # Generate the output file
-    generate_output(contig_bins, output_dir, "decontaminated_and_unbinned_contig_bins.tsv", header=False)
+    return contig_bins

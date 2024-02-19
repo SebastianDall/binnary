@@ -70,5 +70,17 @@ def get_parser():
                 action='store_true',
                 help="Indicate that the detect_contamination workflow should be run first"
             )
-
+            
+            subparser.add_argument(
+                "--write_bins",
+                action='store_true',
+                help="If specified, new bins will be written to a bins folder. Requires --assembly_file to be specified.",
+            )
+            
+            subparser.add_argument(
+                "--assembly_file",
+                type=str,
+                help="Path to assembly.fasta file"
+            )
+            
     return parser

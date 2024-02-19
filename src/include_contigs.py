@@ -21,7 +21,8 @@ def include_contigs(motifs_scored_in_bins, contamination, args):
         args
     )
     
-    motif_binary_compare.to_csv("motif_binary_compare.tsv", sep="\t", index=False)
+    dp.generate_output(motif_binary_compare, args.out, "motif_binary_comparison.tsv")
+    
     # Define the corresponding choices for each condition
     choices = [
         0,  # bin motif is methylated, contig motif is methylated

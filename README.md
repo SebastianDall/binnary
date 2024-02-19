@@ -57,5 +57,7 @@ To run a test, run the following command:
     --contig_bins data/PaPr00000216MP_nm_0.1.18/bins.tsv \
     --assembly_stats data/PaPr00000216MP_nm_0.1.18/flye/assembly_info.txt \
     --run_detect_contamination \
+    --assembly_file data/PaPr00000216MP_nm_0.1.18/flye/assembly_file.fasta \
+    --write_bins \
     --out output/PaPr00000216MP_nm_0.1.18
 ```
