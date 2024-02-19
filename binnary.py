@@ -54,10 +54,15 @@ def main(args):
         if args.contamination_file:
             print("Loading contamination file...")
             contamination = data_processing.load_contamination_file(args.contamination_file)
-            
+        
+        # Run the include_contigs analysis    
         analysis_results = include_contigs.include_contigs(
             motifs_scored_in_bins, contamination, args
         )
+        
+        # Create a new contig_bin file
+        data_processing.create_contig_bin_file(contig_bins, analysis_results, contamination, "decontaminated_contig_bins.tsv")
+        
     
     
     # Step 3: Post-analysis processing and output generation

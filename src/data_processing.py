@@ -24,7 +24,7 @@ def load_data(args):
 
 
 
-def generate_output(output_df, output_path):
+def generate_output(output_df, output_path, header=True):
     """
     Generate the output files for the analysis.
     """
@@ -34,7 +34,7 @@ def generate_output(output_df, output_path):
         os.makedirs(output_dir)
         
     # Generate the output files
-    output_df.to_csv(output_path, sep="\t", index=False)
+    output_df.to_csv(output_path, sep="\t", index=False, header=header)
 
 
 def calculate_binary_methylation_bin_consensus_from_bin_motifs(bin_motifs, args):
@@ -295,3 +295,20 @@ def load_contamination_file(contamination_file):
         raise ValueError("The contamination file is empty.")
     
     return contamination
+
+
+def create_contig_bin_file(contig_bins, include, contamination, output_path):
+    """
+    Create a new contig_bin file based on the analysis results and contamination file.
+    """
+    # Remove contigs in the contamination file from the contig_bins
+    contig_bins = contig_bins[~contig_bins["contig"].isin(contamination["contig"])]
+    
+    # Add the contigs in the include DataFrame to the contig_bins
+    contig_bins = pd.concat([contig_bins, include[["contig", "bin"]]], ignore_index=True)
+    
+    # Sort the contig_bins by bin and contig
+    contig_bins = contig_bins.sort_values(by=["bin", "contig"])
+    
+    # Generate the output file
+    generate_output(contig_bins, output_path, header=False)
