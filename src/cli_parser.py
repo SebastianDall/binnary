@@ -39,7 +39,7 @@ def add_common_arguments(subparser):
         default=0.40,
         help="Percentage of ambiguous motifs defined as mean methylation between 0.05 and 0.40 in a bin. Motifs with an ambiguous methylation percentage of more than this value are removed from scoring. Default is 0.40",
     )
-    subparser.add_argument("--out", type=str, help="Path to output filename", required=True)
+    subparser.add_argument("--out", type=str, help="Path to output directory", required=True)
 
 
 def get_parser():
