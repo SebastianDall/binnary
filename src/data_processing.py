@@ -24,7 +24,7 @@ def load_data(args):
 
 
 
-def generate_output(output_df, output_path):
+def generate_output(output_df, output_path, header=True):
     """
     Generate the output files for the analysis.
     """
@@ -34,7 +34,7 @@ def generate_output(output_df, output_path):
         os.makedirs(output_dir)
         
     # Generate the output files
-    output_df.to_csv(output_path, sep="\t", index=False)
+    output_df.to_csv(output_path, sep="\t", index=False, header=header)
 
 
 def calculate_binary_methylation_bin_consensus_from_bin_motifs(bin_motifs, args):
@@ -214,13 +214,17 @@ def calculate_binary_motif_comparison_matrix(motifs_scored_in_bins, args):
         np.nan
     )
     
+    # Calculate the binary methylation value for each motif in each bin where the bin consensus is 1.
+    # If the mean methylation is above the threshold OR the contig mean methylation is above 0.4, the motif is considered methylated in the contig.
     motif_binary_compare["methylation_binary_compare"] = np.where(
-        motif_binary_compare["methylation_binary"] == 1,
-        (motif_binary_compare["mean"] >= motif_binary_compare["methylation_mean_threshold"]).astype(int),
-        np.nan
+        (motif_binary_compare["methylation_binary"] == 1) & 
+        ((motif_binary_compare["mean"] >= motif_binary_compare["methylation_mean_threshold"]) | 
+        (motif_binary_compare["mean"] > 0.4)),
+        1,  # Methylated
+        np.where(motif_binary_compare["methylation_binary"] == 1, 0, np.nan)  # Unmethylated or NaN
     )
     
-    
+    # Calculate score for bin consensus is 0 
     motif_binary_compare["methylation_mean_threshold"] = np.where(
         motif_binary_compare["methylation_binary"] == 0,
         0.25,
@@ -275,3 +279,40 @@ def compare_methylation_pattern(motif_binary_compare, choices):
     
     
     return contig_bin_comparison_score
+
+
+
+def load_contamination_file(contamination_file):
+    """
+    Load the contamination file from the provided path.
+    """
+    contamination = pd.read_csv(contamination_file, delimiter = "\t")
+    
+    # Check if the file contains the required columns
+    # bin	bin_contig_compare	binary_methylation_missmatch_score	contig	length	alternative_bin	alternative_bin_binary_methylation_missmatch_score
+    required_columns = ["bin", "bin_contig_compare", "binary_methylation_missmatch_score", "contig", "length", "alternative_bin", "alternative_bin_binary_methylation_missmatch_score"]
+    if not all(column in contamination.columns for column in required_columns):
+        raise ValueError("The contamination file does not contain the required columns.")
+    
+    # Check if the file contains any rows
+    if len(contamination) == 0:
+        raise ValueError("The contamination file is empty.")
+    
+    return contamination
+
+
+def create_contig_bin_file(contig_bins, include, contamination, output_path):
+    """
+    Create a new contig_bin file based on the analysis results and contamination file.
+    """
+    # Remove contigs in the contamination file from the contig_bins
+    contig_bins = contig_bins[~contig_bins["contig"].isin(contamination["contig"])]
+    
+    # Add the contigs in the include DataFrame to the contig_bins
+    contig_bins = pd.concat([contig_bins, include[["contig", "bin"]]], ignore_index=True)
+    
+    # Sort the contig_bins by bin and contig
+    contig_bins = contig_bins.sort_values(by=["bin", "contig"])
+    
+    # Generate the output file
+    generate_output(contig_bins, output_path, header=False)

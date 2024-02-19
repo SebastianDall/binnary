@@ -5,7 +5,7 @@ from src import data_processing as dp
 
 
 
-def include_contigs(motifs_scored_in_bins, args):
+def include_contigs(motifs_scored_in_bins, contamination, args):
     """
     Takes the motifs_scored_in_bins and motifs_of_interest DataFrames and finds unbinned contigs with an exact methylation pattern as the bin.
     
@@ -21,7 +21,7 @@ def include_contigs(motifs_scored_in_bins, args):
         args
     )
     
-    
+    motif_binary_compare.to_csv("motif_binary_compare.tsv", sep="\t", index=False)
     # Define the corresponding choices for each condition
     choices = [
         0,  # bin motif is methylated, contig motif is methylated
@@ -40,17 +40,16 @@ def include_contigs(motifs_scored_in_bins, args):
     ]["bin_compare"].unique()
     
         
-    # 
-    new_contig_bins = contig_bin_comparison_score[contig_bin_comparison_score["bin_compare"].str.contains("unbinned")]
+    contigs_of_interest = contig_bin_comparison_score[
+        (contig_bin_comparison_score["bin_compare"].str.contains("unbinned")) |  # Retain unbinned contigs
+        (contig_bin_comparison_score["bin_compare"].isin(contamination["bin_contig_compare"])) # Retain contigs in the contamination file   
+    ]
     
-    print(new_contig_bins)
     
-    new_contig_bins = new_contig_bins[
-        (~new_contig_bins["bin_compare"].isin(contigs_w_no_methylation)) &  # Remove contigs with no methylation
-        (new_contig_bins["binary_methylation_missmatch_score"] == 0)        # Retain contigs with no methylation missmatch   
+    contigs_of_interest = contigs_of_interest[
+        (~contigs_of_interest["bin_compare"].isin(contigs_w_no_methylation)) &  # Remove contigs with no methylation
+        (contigs_of_interest["binary_methylation_missmatch_score"] == 0)        # Retain contigs with no methylation missmatch   
     ].drop_duplicates(subset=["contig"], keep=False)                        # Remove duplicate contigs
     
-    
-    # print(new_contig_bins)
-    
-    return new_contig_bins
+        
+    return contigs_of_interest
