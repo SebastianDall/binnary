@@ -11,6 +11,8 @@ class MockArgs:
         self.n_motif_bin_cutoff = 500
         self.n_motif_contig_cutoff = 10
         self.ambiguous_motif_percentage_cutoff = 0.40
+        self.min_motif_comparisons = 2
+        self.out = "tests/test_output"
 
 @pytest.fixture(scope="session")
 def loaded_data():
