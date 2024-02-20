@@ -15,11 +15,8 @@ def test_argparser_detect_contamination_with_specific_data(mocker):
             "data/bin-motifs.tsv",
             "--contig_bins",
             "data/bins.tsv",
-            "--assembly_stats",
-            "data/assembly_info.txt",
-            # "--assembly_file", "data/assembly_file.fasta",
             "--out",
-            "output.tsv",
+            "output",
         ],
     )
 
@@ -32,5 +29,4 @@ def test_argparser_detect_contamination_with_specific_data(mocker):
     assert args.motifs_scored == "data/motifs-scored.tsv"
     assert args.bin_motifs == "data/bin-motifs.tsv"
     assert args.contig_bins == "data/bins.tsv"
-    assert args.assembly_stats == "data/assembly_info.txt"
-    assert args.out == "output.tsv"
+    assert args.out == "output"

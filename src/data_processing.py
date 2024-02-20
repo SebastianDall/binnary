@@ -14,17 +14,13 @@ def load_data(args):
     motifs_scored = pd.read_csv(args.motifs_scored, delimiter = "\t")
     bin_motifs = pd.read_csv(args.bin_motifs, delimiter = "\t")
     contig_bins = pd.read_csv(args.contig_bins, delimiter = "\t", header = None)
-    assembly_stats = pd.read_csv(args.assembly_stats, delimiter = "\t")
+    
     
     # Perform any additional preprocessing steps here
     # Change colnames of contig_bins
     contig_bins.columns = ["contig", "bin"]
     
-    
-    # Rename the first column to 'contig'
-    assembly_stats.rename(columns={assembly_stats.columns[0]: "contig"}, inplace=True)
-    
-    return motifs_scored, bin_motifs, contig_bins, assembly_stats
+    return motifs_scored, bin_motifs, contig_bins
 
 def read_fasta(file_path):
     # Check if the file exists
@@ -130,25 +126,24 @@ def calculate_binary_methylation_bin_consensus_from_bin_motifs(bin_motifs, args)
     return bin_motif_binary
 
 
-def prepare_motifs_scored_in_bins(motifs_scored, motifs_of_interest, contig_bins, assembly_stats):
+def prepare_motifs_scored_in_bins(motifs_scored, motifs_of_interest, contig_bins):
     """
     Prepares the motifs_scored_in_bins DataFrame by merging with bin motifs, contig bins, and assembly stats,
     and calculates additional metrics like number of motifs and mean methylation per contig.
     """
-       
+    
     # Filter and enhance motifs_scored based on motifs_in_bins
     motifs_scored["motif_mod"] = motifs_scored["motif"] + "_" + motifs_scored["mod_type"]
     motifs_scored_in_bins = motifs_scored[motifs_scored["motif_mod"].isin(motifs_of_interest)]
     
-    # Merge with contig_bins and assembly_stats
+    # Merge with contig_bins
     motifs_scored_in_bins = motifs_scored_in_bins.merge(contig_bins, on="contig", how="left")
-    motifs_scored_in_bins = motifs_scored_in_bins.merge(assembly_stats[["contig", "length"]], on="contig", how="left")
     
     # Handle NA bins as 'unbinned'
     motifs_scored_in_bins["bin"] = motifs_scored_in_bins["bin"].fillna("unbinned")
     
     # Add bin_contig identifier
-    motifs_scored_in_bins["bin_contig"] = motifs_scored_in_bins["bin"] + "_" + motifs_scored_in_bins["contig"] + "_" + motifs_scored_in_bins["length"].astype(str)
+    motifs_scored_in_bins["bin_contig"] = motifs_scored_in_bins["bin"] + "_" + motifs_scored_in_bins["contig"]
     
     # Calculate n_motifs and mean methylation
     motifs_scored_in_bins["n_motifs"] = motifs_scored_in_bins["n_mod"] + motifs_scored_in_bins["n_nomod"]
@@ -332,7 +327,7 @@ def compare_methylation_pattern(motif_binary_compare, choices):
     )
     
     # Split bin_compare into bin and contig
-    contig_bin_comparison_score[["contig_bin", "contig", "contig_number", "length"]] = contig_bin_comparison_score["bin_compare"].str.split("_", expand=True)
+    contig_bin_comparison_score[["contig_bin", "contig", "contig_number"]] = contig_bin_comparison_score["bin_compare"].str.split("_", expand=True)
     contig_bin_comparison_score["contig"] = (contig_bin_comparison_score["contig"] + "_" + contig_bin_comparison_score["contig_number"])
     contig_bin_comparison_score = contig_bin_comparison_score.drop(columns=["contig_number"])
     
@@ -348,8 +343,8 @@ def load_contamination_file(contamination_file):
     contamination = pd.read_csv(contamination_file, delimiter = "\t")
     
     # Check if the file contains the required columns
-    # bin	bin_contig_compare	binary_methylation_missmatch_score	contig	length	alternative_bin	alternative_bin_binary_methylation_missmatch_score
-    required_columns = ["bin", "bin_contig_compare", "binary_methylation_missmatch_score", "contig", "length", "alternative_bin", "alternative_bin_binary_methylation_missmatch_score"]
+    # bin	bin_contig_compare	binary_methylation_missmatch_score	contig	alternative_bin	alternative_bin_binary_methylation_missmatch_score
+    required_columns = ["bin", "bin_contig_compare", "binary_methylation_missmatch_score", "contig", "alternative_bin", "alternative_bin_binary_methylation_missmatch_score"]
     if not all(column in contamination.columns for column in required_columns):
         raise ValueError("The contamination file does not contain the required columns.")
     
