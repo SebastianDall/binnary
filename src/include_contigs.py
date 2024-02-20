@@ -23,6 +23,17 @@ def include_contigs(motifs_scored_in_bins, contamination, args):
     
     dp.generate_output(motif_binary_compare, args.out, "motif_binary_comparison.tsv")
     
+    # Remove bins with no methylation in consensus
+    bins_w_no_methylation = motif_binary_compare[
+        motif_binary_compare.groupby("bin")["methylation_binary"].transform("sum") == 0
+    ]["bin"].unique()
+    
+    # Remove contigs with no methylation from the comparison
+    motif_binary_compare = motif_binary_compare[
+        ~motif_binary_compare["bin"].isin(bins_w_no_methylation)
+    ]
+    
+        
     # Define the corresponding choices for each condition
     choices = [
         0,  # bin motif is methylated, contig motif is methylated
@@ -40,7 +51,7 @@ def include_contigs(motifs_scored_in_bins, contamination, args):
         motif_binary_compare.groupby("bin_compare")["methylation_binary_compare"].transform("sum") == 0
     ]["bin_compare"].unique()
     
-        
+    
     contigs_of_interest = contig_bin_comparison_score[
         (contig_bin_comparison_score["bin_compare"].str.contains("unbinned")) |  # Retain unbinned contigs
         (contig_bin_comparison_score["bin_compare"].isin(contamination["bin_contig_compare"])) # Retain contigs in the contamination file   
