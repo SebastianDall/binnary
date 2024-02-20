@@ -10,9 +10,6 @@ def add_common_arguments(subparser):
     subparser.add_argument(
         "--contig_bins", type=str, help="Path to bins.tsv file for contig bins", required=True
     )
-    subparser.add_argument(
-        "--assembly_stats", type=str, help="Path to assembly_info.txt file", required=True
-    )
     # subparser.add_argument("--assembly_file", type=str, help="Path to assembly.fasta file")
     subparser.add_argument(
         "--mean_methylation_cutoff",

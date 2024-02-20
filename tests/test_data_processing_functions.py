@@ -8,8 +8,6 @@ def test_feature_with_loaded_data(loaded_data):
     motifs_scored = loaded_data["motifs_scored"]
     bin_motifs = loaded_data["bin_motifs"]
     contig_bins = loaded_data["contig_bins"]
-    assembly_stats = loaded_data["assembly_stats"]
-    # assembly_file = loaded_data["assembly_file"]
 
     # Now you can use the data in your test assertions
     assert motifs_scored is not None
@@ -24,15 +22,6 @@ def test_feature_with_loaded_data(loaded_data):
 
     contig_set = {f"contig_{i}" for i in range(1, 14)} | {"contig_16"}
     assert set(contig_bins["contig"].unique()) == contig_set
-
-    # assembly stats
-    assert assembly_stats is not None
-    contig_set = {f"contig_{i}" for i in range(1, 17)}
-    assert set(assembly_stats["contig"].unique()) == contig_set
-
-    # assembly file
-    # assert assembly_file is not None
-    # assert len(assembly_file) == 16
 
 
 
@@ -63,7 +52,6 @@ def test_motifs_scored_in_bins(loaded_data):
     motifs_scored = loaded_data["motifs_scored"]
     bin_motifs = loaded_data["bin_motifs"]
     contig_bins = loaded_data["contig_bins"]
-    assembly_stats = loaded_data["assembly_stats"]
 
     # Step 1 create bin_motif_binary
     args = MockArgs()
@@ -73,15 +61,16 @@ def test_motifs_scored_in_bins(loaded_data):
     motifs_scored_in_bins = data_processing.prepare_motifs_scored_in_bins(
         motifs_scored,
         bin_motif_binary.motif_mod.unique(),
-        contig_bins,
-        assembly_stats,
+        contig_bins
     )
 
     # motifs_scored_in_bins
     assert sorted(bin_motif_binary["motif_mod"].unique().tolist()) == sorted(
         motifs_scored_in_bins["motif_mod"].unique().tolist()
     )
-    assert motifs_scored_in_bins.shape[1] == 13  # number of columns
+    
+    # Assert that the number of columns is 12
+    assert motifs_scored_in_bins.shape[1] == 12  # number of columns
     # Assert contig 1 belongs to bin 1
     assert (
         motifs_scored_in_bins.loc[

@@ -6,7 +6,6 @@ class MockArgs:
         self.motifs_scored = "data/test_data/motifs-scored.tsv"
         self.bin_motifs = "data/test_data/bin-motifs.tsv"
         self.contig_bins = "data/test_data/bins.tsv"
-        self.assembly_stats = "data/test_data/assembly_info.txt"
         self.mean_methylation_cutoff = 0.25
         self.n_motif_bin_cutoff = 500
         self.n_motif_contig_cutoff = 10
@@ -23,14 +22,13 @@ def loaded_data():
     data = data_processing.load_data(mock_args)
 
     # Unpack the data tuple to individual variables if needed
-    motifs_scored, bin_motifs, contig_bins, assembly_stats = data #assembly_file
+    motifs_scored, bin_motifs, contig_bins = data
 
     # Return the data as a dictionary or as individual variables, depending on your preference
     return {
         "motifs_scored": motifs_scored,
         "bin_motifs": bin_motifs,
-        "contig_bins": contig_bins,
-        "assembly_stats": assembly_stats
+        "contig_bins": contig_bins
     }
     
     
@@ -42,7 +40,6 @@ def motifs_scored_in_bins_and_bin_motifs(loaded_data):
     motifs_scored = loaded_data["motifs_scored"]
     bin_motifs = loaded_data["bin_motifs"]
     contig_bins = loaded_data["contig_bins"]
-    assembly_stats = loaded_data["assembly_stats"]
     
     bin_motif_binary = data_processing.calculate_binary_methylation_bin_consensus_from_bin_motifs(bin_motifs, args)
     
@@ -50,7 +47,7 @@ def motifs_scored_in_bins_and_bin_motifs(loaded_data):
     
     # Step 2: create motifs_scored_in_bins
     motifs_scored_in_bins = data_processing.prepare_motifs_scored_in_bins(
-        motifs_scored, motifs_in_bins, contig_bins, assembly_stats, 
+        motifs_scored, motifs_in_bins, contig_bins 
     )
     
     return {

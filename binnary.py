@@ -29,8 +29,6 @@ def main(args):
         motifs_scored,
         bin_motifs,
         contig_bins,
-        assembly_stats,
-        # assembly_file,
     ) = data_processing.load_data(args)
 
     
@@ -43,8 +41,7 @@ def main(args):
     motifs_scored_in_bins = data_processing.prepare_motifs_scored_in_bins(
         motifs_scored,
         motifs_in_bin_consensus,
-        contig_bins,
-        assembly_stats,
+        contig_bins
     )
 
     # Functions from the analysis module
