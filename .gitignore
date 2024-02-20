@@ -2,6 +2,7 @@ analysis/
 data/PaPr00000216MP*
 output/
 .vscode/
+tests/test_output/
 
 R
 output.tsv

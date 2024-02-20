@@ -83,4 +83,11 @@ def get_parser():
                 help="Path to assembly.fasta file"
             )
             
+            subparser.add_argument(
+                "--min_motif_comparisons",
+                type=int,
+                default=5,
+                help="Minimum number of non-NA motif comparisons required to include a contig in the analysis. Default is 5",
+            )
+            
     return parser

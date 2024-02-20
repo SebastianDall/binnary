@@ -28,10 +28,13 @@ def include_contigs(motifs_scored_in_bins, contamination, args):
         motif_binary_compare.groupby("bin")["methylation_binary"].transform("sum") == 0
     ]["bin"].unique()
     
-    # Remove contigs with no methylation from the comparison
+    # Remove bins with no methylation from the comparison
     motif_binary_compare = motif_binary_compare[
         ~motif_binary_compare["bin"].isin(bins_w_no_methylation)
     ]
+    
+    # Remove comparisons between bins and contigs with less than args.min_motif_comparisons from the comparison
+    motif_binary_compare = motif_binary_compare.groupby(['bin', 'bin_compare']).filter(lambda x: x['mean'].count() >= args.min_motif_comparisons)
     
         
     # Define the corresponding choices for each condition
