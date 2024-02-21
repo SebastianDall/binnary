@@ -21,17 +21,6 @@ def detect_contamination(motifs_scored_in_bins, args):
     """
     motifs_scored_in_bins_wo_unbinned = motifs_scored_in_bins[~motifs_scored_in_bins["bin_contig"].str.contains("unbinned")]
     
-        
-    
-    # all_contigs = motifs_scored_in_bins["contig"].unique()
-    # for contig in all_contigs:
-    
-    # motif_binary_compare = dp.calculate_binary_motif_comparison_matrix(
-    #     motifs_scored_in_bins_wo_unbinned,
-    #     args
-    # )
-    
-    
     # Define the corresponding choices for each condition
     choices = [
         0,  # bin motif is methylated, contig motif is methylated
@@ -48,20 +37,13 @@ def detect_contamination(motifs_scored_in_bins, args):
         args
     )
 
-    # contig_bin_comparison_score = dp.compare_methylation_pattern(motif_binary_compare, choices)
-    
     # Filter contig_bin == bin and contig_bin_comparison_score > 0
     contamination_contigs = contig_bin_comparison_score[
         # NOTE: This line also removes all contigs from bins with no methylation
         (contig_bin_comparison_score["bin"] == contig_bin_comparison_score["contig_bin"]) &
         (contig_bin_comparison_score["binary_methylation_missmatch_score"] > 0)
     ]
-    
-    # Find contigs with no methylation
-    # contigs_w_no_methylation = motif_binary_compare[
-    #     motif_binary_compare.groupby("bin_compare")["methylation_binary_compare"].transform("sum") == 0
-    # ]["bin_compare"].unique()
-    
+
     # Find alternative bin for contamination contigs
     ## Must have a perfect match
     contamination_contigs_alternative_bin = contig_bin_comparison_score[
