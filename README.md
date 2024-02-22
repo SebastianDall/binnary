@@ -48,6 +48,7 @@ To run a test, run the following command:
 
 ```bash
 ./binnary.py include_contigs \
+    --threads 4 \
     --motifs_scored data/PaPr00000216MP_nm_0.1.18/nanomotif/motifs-scored.tsv \
     --bin_motifs data/PaPr00000216MP_nm_0.1.18/nanomotif/bin-motifs.tsv \
     --contig_bins data/PaPr00000216MP_nm_0.1.18/bins.tsv \
