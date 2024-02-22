@@ -1,6 +1,7 @@
 import pytest
 from src import include_contigs as ic
 from src import detect_contamination as dc
+from src import data_processing as dp
 from .conftest import MockArgs
 
 def test_include_contigs(loaded_data, motifs_scored_in_bins_and_bin_motifs):
@@ -11,9 +12,17 @@ def test_include_contigs(loaded_data, motifs_scored_in_bins_and_bin_motifs):
     """
     args = MockArgs()
     
-    contamination = dc.detect_contamination(motifs_scored_in_bins_and_bin_motifs["motifs_scored_in_bins"], args)
+    motifs_scored_in_bins = motifs_scored_in_bins_and_bin_motifs["motifs_scored_in_bins"]
     
-    include_contigs_df = ic.include_contigs(motifs_scored_in_bins_and_bin_motifs["motifs_scored_in_bins"], contamination, args)
+    
+    bin_motifs_from_motifs_scored_in_bins = dp.construct_bin_motifs_from_motifs_scored_in_bins(
+        motifs_scored_in_bins,
+        args
+    )
+    
+    contamination = dc.detect_contamination(motifs_scored_in_bins, bin_motifs_from_motifs_scored_in_bins, args)
+    
+    include_contigs_df = ic.include_contigs(motifs_scored_in_bins, bin_motifs_from_motifs_scored_in_bins, contamination, args)
     
     print(include_contigs_df)
     
@@ -32,10 +41,17 @@ def test_include_with_too_high_min_motif_comparisons(loaded_data, motifs_scored_
     args = MockArgs()
     args.min_motif_comparisons = 10
     
-    contamination = dc.detect_contamination(motifs_scored_in_bins_and_bin_motifs["motifs_scored_in_bins"], args)
     
-    with pytest.raises(ValueError) as excinfo:
-        ic.include_contigs(motifs_scored_in_bins_and_bin_motifs["motifs_scored_in_bins"], contamination, args)
-
-    assert "Columns must be same length as key" in str(excinfo.value)
     
+    motifs_scored_in_bins = motifs_scored_in_bins_and_bin_motifs["motifs_scored_in_bins"]
+    bin_motifs_from_motifs_scored_in_bins = dp.construct_bin_motifs_from_motifs_scored_in_bins(
+        motifs_scored_in_bins,
+        args
+    )
+    
+    contamination = dc.detect_contamination(motifs_scored_in_bins, bin_motifs_from_motifs_scored_in_bins, args)
+    
+    include = ic.include_contigs(motifs_scored_in_bins, bin_motifs_from_motifs_scored_in_bins, contamination, args)
+    
+    # Assert df is empty
+    assert include.shape[0] == 0

@@ -1,5 +1,6 @@
 import pytest
 from src import detect_contamination
+from src import data_processing as dp
 from .conftest import MockArgs
 
 def test_detect_contamination(loaded_data, motifs_scored_in_bins_and_bin_motifs):
@@ -10,8 +11,17 @@ def test_detect_contamination(loaded_data, motifs_scored_in_bins_and_bin_motifs)
     """
     args = MockArgs()
     
+    motifs_scored_in_bins = motifs_scored_in_bins_and_bin_motifs["motifs_scored_in_bins"]
+    
+    
+    bin_motifs_from_motifs_scored_in_bins = dp.construct_bin_motifs_from_motifs_scored_in_bins(
+        motifs_scored_in_bins,
+        args
+    )
+    
     contaminated_contigs = detect_contamination.detect_contamination(
-        motifs_scored_in_bins_and_bin_motifs["motifs_scored_in_bins"],
+        motifs_scored_in_bins,
+        bin_motifs_from_motifs_scored_in_bins,
         args
     )
     
