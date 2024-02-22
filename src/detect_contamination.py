@@ -2,8 +2,9 @@ import pandas as pd
 import numpy as np
 from src import data_processing as dp
 from src import scoring as sc
+import logging
 
-def detect_contamination(motifs_scored_in_bins, args):
+def detect_contamination(motifs_scored_in_bins, bin_consensus, args):
     """
     Takes the bin_motif_binary and motifs_scored_in_bins DataFrames and performs the contamination detection analysis.
     Firstly bin_motif_binary is used to create a binary representation of the methylation status of each motif in each bin.
@@ -19,6 +20,8 @@ def detect_contamination(motifs_scored_in_bins, args):
         motifs_of_interest: list - List of motifs to be considered from bin_motif_binary
         args: argparse.Namespace - Namespace containing the arguments passed to the script
     """
+    logger = logging.getLogger(__name__)
+    logger.info("Starting contamination detection analysis...")
     motifs_scored_in_bins_wo_unbinned = motifs_scored_in_bins[~motifs_scored_in_bins["bin_contig"].str.contains("unbinned")]
     
     # Define the corresponding choices for each condition
@@ -33,11 +36,14 @@ def detect_contamination(motifs_scored_in_bins, args):
 
     contig_bin_comparison_score, contigs_w_no_methylation = sc.compare_methylation_pattern_multiprocessed(
         motifs_scored_in_bins_wo_unbinned,
+        bin_consensus,
         choices,
         args,
         num_processes=args.threads
     )
 
+    logger.info("Finding contamination in bins")
+    
     # Filter contig_bin == bin and contig_bin_comparison_score > 0
     contamination_contigs = contig_bin_comparison_score[
         # NOTE: This line also removes all contigs from bins with no methylation
@@ -45,6 +51,7 @@ def detect_contamination(motifs_scored_in_bins, args):
         (contig_bin_comparison_score["binary_methylation_missmatch_score"] > 0)
     ]
 
+    logger.info("Finding alternative bin for contamination contigs")
     # Find alternative bin for contamination contigs
     ## Must have a perfect match
     contamination_contigs_alternative_bin = contig_bin_comparison_score[
@@ -79,5 +86,7 @@ def detect_contamination(motifs_scored_in_bins, args):
 
     # sort by bin
     contamination_contigs = contamination_contigs.sort_values(by=["bin", "bin_contig_compare"])
+    
+    logger.info("Contamination detection complete")
     
     return contamination_contigs
