@@ -89,3 +89,51 @@ def define_mean_methylation_thresholds(motif_binary_compare):
     )
     
     return motif_binary_compare
+
+
+from multiprocessing import Pool
+
+def process_bin_contig(bin_contig, bin_motifs_from_motifs_scored_in_bins, motifs_scored_in_contigs, choices):
+    motif_binary_compare = pd.merge(
+        bin_motifs_from_motifs_scored_in_bins,
+        motifs_scored_in_contigs[motifs_scored_in_contigs["bin_compare"] == bin_contig],
+        on="motif_mod"
+    )
+
+    motif_binary_compare = define_mean_methylation_thresholds(motif_binary_compare)
+
+    if motif_binary_compare["methylation_binary_compare"].sum() == 0:
+        return None, bin_contig
+
+    contig_bin_comparison_score = dp.compare_methylation_pattern(motif_binary_compare, choices)
+    return contig_bin_comparison_score, None
+
+def compare_methylation_pattern_multiprocessed(motifs_scored_in_bins, choices, args, num_processes=None):
+    bin_motifs_from_motifs_scored_in_bins = dp.construct_bin_motifs_from_motifs_scored_in_bins(
+        motifs_scored_in_bins,
+        args
+    )
+
+    motifs_scored_in_contigs = motifs_scored_in_bins[motifs_scored_in_bins["n_motifs"] >= args.n_motif_contig_cutoff]
+    motifs_scored_in_contigs = motifs_scored_in_contigs[["bin_contig", "motif_mod", "mean"]]
+    motifs_scored_in_contigs.rename(columns={"bin_contig": "bin_compare"}, inplace=True)
+
+    comparison_score = pd.DataFrame()
+    contigs_w_no_methylation = []
+
+    with Pool(processes=num_processes) as pool:
+        results = pool.starmap(
+            process_bin_contig,
+            [
+                (bin_contig, bin_motifs_from_motifs_scored_in_bins, motifs_scored_in_contigs, choices)
+                for bin_contig in motifs_scored_in_contigs["bin_compare"].unique()
+            ]
+        )
+
+    for result, no_methylation in results:
+        if result is not None:
+            comparison_score = pd.concat([comparison_score, result])
+        if no_methylation is not None:
+            contigs_w_no_methylation.append(no_methylation)
+
+    return comparison_score, contigs_w_no_methylation

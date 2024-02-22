@@ -31,10 +31,11 @@ def detect_contamination(motifs_scored_in_bins, args):
         0,  # bin motif is not methylated, contig motif is not observed
     ]
 
-    contig_bin_comparison_score, contigs_w_no_methylation = sc.compare_methylation_pattern(
+    contig_bin_comparison_score, contigs_w_no_methylation = sc.compare_methylation_pattern_multiprocessed(
         motifs_scored_in_bins_wo_unbinned,
         choices,
-        args
+        args,
+        num_processes=args.threads
     )
 
     # Filter contig_bin == bin and contig_bin_comparison_score > 0
