@@ -12,6 +12,12 @@ class MockArgs:
         self.ambiguous_motif_percentage_cutoff = 0.40
         self.min_motif_comparisons = 2
         self.out = "tests/test_output"
+        self.threads = 1
+
+# Remove tests/test_output directory
+import shutil
+shutil.rmtree("tests/test_output", ignore_errors=True)
+
 
 @pytest.fixture(scope="session")
 def loaded_data():

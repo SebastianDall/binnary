@@ -42,16 +42,18 @@ To run a test, run the following command:
     --bin_motifs data/PaPr00000216MP_nm_0.1.18/nanomotif/bin-motifs.tsv \
     --contig_bins data/PaPr00000216MP_nm_0.1.18/bins.tsv \
     --n_motif_contig_cutoff 10 \
-    --out output/PaPr00000216MP_nm_0.1.18
+    --threads 4 \
+    --out output/PaPr00000216MP_nm_0.1.18_test
 ```
 
 ```bash
 ./binnary.py include_contigs \
+    --threads 4 \
     --motifs_scored data/PaPr00000216MP_nm_0.1.18/nanomotif/motifs-scored.tsv \
     --bin_motifs data/PaPr00000216MP_nm_0.1.18/nanomotif/bin-motifs.tsv \
     --contig_bins data/PaPr00000216MP_nm_0.1.18/bins.tsv \
     --run_detect_contamination \
     --assembly_file data/PaPr00000216MP_nm_0.1.18/flye/assembly_file.fasta \
     --write_bins \
-    --out output/PaPr00000216MP_nm_0.1.18
+    --out output/PaPr00000216MP_nm_0.1.18_test
 ```

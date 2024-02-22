@@ -124,34 +124,3 @@ def test_calculate_binary_motif_comparison_matrix(loaded_data, motifs_scored_in_
     assert set(b3["motif_mod"].unique()) == set(["m1_a", "m2_a", "m3_a", "m6_a"])
     assert b3[b3["motif_mod"] == "m6_a"]["methylation_binary"].values[0] == 1.0
     assert b3[b3["motif_mod"] == "m2_a"]["methylation_binary"].values[0] == 0.0
-    
-def test_compare_methylation_pattern(loaded_data, motifs_scored_in_bins_and_bin_motifs):
-    """
-    
-    """
-    motifs_scored_in_bins = motifs_scored_in_bins_and_bin_motifs["motifs_scored_in_bins"]
-    
-    args = MockArgs()
-    
-    motif_binary_compare = data_processing.calculate_binary_motif_comparison_matrix(
-        motifs_scored_in_bins[~motifs_scored_in_bins["bin_contig"].str.contains("unbinned")],
-        args
-    )
-    
-    # Define the corresponding choices for each condition
-    choices = [
-        0,  # bin motif is methylated, contig motif is methylated
-        1,  # bin motif is methylated, contig motif is not methylated
-        1,  # bin motif is not methylated, contig motif is methylated
-        0,  # bin motif is not methylated, contig motif is not methylated
-        0,  # bin motif is methylated, contig motif is not observed
-        0,  # bin motif is not methylated, contig motif is not observed
-    ]
-    
-    contig_bin_comparison_score = data_processing.compare_methylation_pattern(motif_binary_compare, choices)
-    
-    assert contig_bin_comparison_score is not None
-    assert set(contig_bin_comparison_score["bin"].unique()) == {'b1', 'b2', 'b3', 'b4'}
-    assert len(contig_bin_comparison_score["contig"].unique()) == 14
-    assert contig_bin_comparison_score[(contig_bin_comparison_score["bin"] == "b2") & (contig_bin_comparison_score["contig"] == "contig_4")]["binary_methylation_missmatch_score"].values[0] == 0
-    

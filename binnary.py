@@ -2,7 +2,8 @@
 import sys
 from src import data_processing, detect_contamination, include_contigs
 from src.cli_parser import get_parser
-
+import logging
+from src.logging import set_logger_config
 # Import other necessary libraries here
 
 
@@ -23,6 +24,12 @@ def main(args):
     
     print("Starting Binnary ", args.command, " analysis...")
 
+    
+    # Settting up the logger
+    set_logger_config(args)
+    logger = logging.getLogger(__name__)
+    logger.info("Starting Binnary analysis...")
+    
     # Step 1: Load and preprocess data
     # These functions would be defined in your data_processing module
     (
@@ -43,11 +50,19 @@ def main(args):
         motifs_in_bin_consensus,
         contig_bins
     )
+    
+    
+    # Create the bin_consensus dataframe for scoring
+    logger.info("Creating bin_consensus dataframe for scoring...")
+    bin_motifs_from_motifs_scored_in_bins = data_processing.construct_bin_motifs_from_motifs_scored_in_bins(
+        motifs_scored_in_bins,
+        args
+    )
 
     # Functions from the analysis module
     if args.command == "detect_contamination" or (args.command == "include_contigs" and args.run_detect_contamination):
         contamination = detect_contamination.detect_contamination(
-            motifs_scored_in_bins, args
+            motifs_scored_in_bins, bin_motifs_from_motifs_scored_in_bins, args
         )
         data_processing.generate_output(contamination, args.out, "bin_contamination.tsv")
         
@@ -60,7 +75,7 @@ def main(args):
         
         # Run the include_contigs analysis    
         include_contigs_df = include_contigs.include_contigs(
-            motifs_scored_in_bins, contamination, args
+            motifs_scored_in_bins, bin_motifs_from_motifs_scored_in_bins, contamination, args
         )
         
         # Save the include_contigs_df results
@@ -71,17 +86,19 @@ def main(args):
         data_processing.generate_output(new_contig_bins, args.out, "decontaminated_contig_bins_with_include.tsv")
         
         if args.write_bins:
+            logger.info("Write bins flag is set. Writing bins to file...")
             print("Loading assembly file...")
+            logger.info("Loading assembly file...")
             assembly = data_processing.read_fasta(args.assembly_file)
             
-            print(f"Writing bins to {args.out}/bins/...")
+            logger.info(f"Writing bins to {args.out}/bins/...")
             data_processing.write_bins_from_contigs(new_contig_bins, assembly, args.out)
             
             
             
             
     
-    
+    logger.info(f"Analysis Completed. Results are saved to: {args.out}")
     print("Analysis Completed. Results are saved to:", args.out)
 
 
