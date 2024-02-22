@@ -1,4 +1,4 @@
-import pandas as pd
+import polars as pl
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
@@ -9,19 +9,25 @@ import logging
 
 def load_data(args):
     """
-    Load and preprocess data for the analysis.
+    Load data for the analysis.
     """
     logger = logging.getLogger(__name__)
-    logger.info("Loading and preprocessing data.")
+    logger.info("Loading data.")
     # Load the data from the provided files
-    motifs_scored = pd.read_csv(args.motifs_scored, delimiter = "\t")
-    bin_motifs = pd.read_csv(args.bin_motifs, delimiter = "\t")
-    contig_bins = pd.read_csv(args.contig_bins, delimiter = "\t", header = None)
+    # Load the data from the provided files using Polars
     
+    motifs_scored = pl.read_csv(args.motifs_scored, separator="\t")
     
-    # Perform any additional preprocessing steps here
-    # Change colnames of contig_bins
-    contig_bins.columns = ["contig", "bin"]
+    bin_motifs = pl.read_csv(args.bin_motifs, separator="\t")
+    
+    # Polars automatically infers headers; if args.contig_bins file doesn't have headers, you need to specify it
+    contig_bins = pl.read_csv(args.contig_bins, separator="\t", has_header=False).with_columns(
+        [
+            pl.col("column_1").alias("contig"),
+            pl.col("column_2").alias("bin")
+        ]
+    )
+
     logger.info("Data loaded.")
     return motifs_scored, bin_motifs, contig_bins
 
@@ -101,34 +107,53 @@ def generate_output(output_df, outdir, filename, header=True):
     output_df.to_csv(file_path, sep="\t", index=False, header=header)
 
 
-def calculate_binary_methylation_bin_consensus_from_bin_motifs(bin_motifs, args):
+def prepare_bin_consensus(bin_motifs, args):
     """
     Prepares the bin_consensus_from_bin_motifs DataFrame by calculating the mean methylation per bin and motif_mod and converting it to binary.    
     """
     # Combine 'motif' and 'mod_type' into 'motif_mod'
-    bin_motifs["motif_mod"] = bin_motifs["motif"] + "_" + bin_motifs["mod_type"]
+    bin_motifs = bin_motifs.with_columns((pl.col("motif") + "_" + pl.col("mod_type")).alias("motif_mod"))
 
     # Calculate total motifs and mean methylation
-    bin_motifs["n_motifs"] = bin_motifs["n_mod_bin"] + bin_motifs["n_nomod_bin"]
-    bin_motifs["mean_methylation"] = bin_motifs["n_mod_bin"] / bin_motifs["n_motifs"]
+    bin_motifs = bin_motifs.with_columns([
+        (pl.col("n_mod_bin") + pl.col("n_nomod_bin")).alias("n_motifs"),
+        (pl.col("n_mod_bin") / (pl.col("n_mod_bin") + pl.col("n_nomod_bin"))).alias("mean_methylation")
+    ])
 
     # Create 'methylation_binary' column based on mean methylation cutoff
-    bin_motifs["methylation_binary"] = (bin_motifs["mean_methylation"] >= args.mean_methylation_cutoff).astype(int)
+    bin_motifs = bin_motifs.with_columns((pl.col("mean_methylation") >= args.mean_methylation_cutoff).cast(int).alias("methylation_binary"))
 
-    # filter motifs that are not observed more than n_motif_bin_cutoff times
-    bin_motifs = bin_motifs[bin_motifs["n_motifs"] >= args.n_motif_bin_cutoff]
-    
+    # Filter motifs that are not observed more than n_motif_bin_cutoff times
+    bin_motifs = bin_motifs.filter(pl.col("n_motifs") >= args.n_motif_bin_cutoff)
+
     # Filter for rows where 'methylation_binary' is 1 and select relevant columns
-    bin_motif_binary = bin_motifs[bin_motifs["methylation_binary"] == 1][["bin", "motif_mod", "mean_methylation", "methylation_binary"]]
-    
-    ## Step 4: Create a binary index for bin and motif_mod
-    bin_motif_binary_index = pd.MultiIndex.from_product([bin_motif_binary["bin"].unique(), bin_motif_binary["motif_mod"].unique()], names=['bin', 'motif_mod'])
+    bin_motif_binary = bin_motifs.filter(pl.col("methylation_binary") == 1)[["bin", "motif_mod", "mean_methylation", "methylation_binary"]]
 
-    bin_motif_binary = bin_motif_binary.set_index(["bin", "motif_mod"])
+    # Create a binary index for bin and motif_mod
+    # Assuming unique_bins and unique_motif_mods are lists of unique values
+    unique_bins = bin_motif_binary["bin"].unique().to_list()
+    unique_motif_mods = bin_motif_binary["motif_mod"].unique().to_list()
 
-    bin_motif_binary = bin_motif_binary.reindex(bin_motif_binary_index, fill_value=0).reset_index()
+    # Create a DataFrame with all combinations of "bin" and "motif_mod"
+    bin_motif_combinations = pl.DataFrame({
+        "bin": [bin for bin in unique_bins for _ in unique_motif_mods],
+        "motif_mod": [motif_mod for _ in unique_bins for motif_mod in unique_motif_mods]
+    })
+
+    # Join the combinations DataFrame with bin_motif_binary
+    bin_motif_binary_enriched = bin_motif_combinations.join(
+        bin_motif_binary, on=["bin", "motif_mod"], how="left"
+    )
+
+    # Fill missing values if necessary and adjust columns as needed
+    bin_motif_binary_enriched = bin_motif_binary_enriched.with_columns([
+        pl.col("mean_methylation").fill_null(0).alias("mean_methylation"),
+        pl.col("methylation_binary").fill_null(0).alias("methylation_binary")
+    ])
     
-    return bin_motif_binary
+    print(bin_motif_binary_enriched)
+
+    return bin_motif_binary_enriched
 
 
 def prepare_motifs_scored_in_bins(motifs_scored, motifs_of_interest, contig_bins):
