@@ -5,11 +5,14 @@ from Bio.SeqRecord import SeqRecord
 import numpy as np
 import gzip
 import os
+import logging
 
 def load_data(args):
     """
     Load and preprocess data for the analysis.
     """
+    logger = logging.getLogger(__name__)
+    logger.info("Loading and preprocessing data.")
     # Load the data from the provided files
     motifs_scored = pd.read_csv(args.motifs_scored, delimiter = "\t")
     bin_motifs = pd.read_csv(args.bin_motifs, delimiter = "\t")
@@ -19,7 +22,7 @@ def load_data(args):
     # Perform any additional preprocessing steps here
     # Change colnames of contig_bins
     contig_bins.columns = ["contig", "bin"]
-    
+    logger.info("Data loaded.")
     return motifs_scored, bin_motifs, contig_bins
 
 def read_fasta(file_path):
@@ -51,8 +54,10 @@ def write_bins_from_contigs(new_contig_bins, assembly_dict, output_dir):
     - assembly_dict (dict): Dictionary with contig IDs as keys and sequences as values, from the assembly file.
     - output_dir (str): Path to the directory where the new bin files will be saved.
     """
-
+    logger = logging.getLogger(__name__)
+    
     # check if the output directory exists
+    logger.info(f"Writing bins to {output_dir}/bins/...")
     output_bins_dir = os.path.join(output_dir, "bins")
     if not os.path.exists(output_bins_dir):
         os.makedirs(output_bins_dir)
@@ -78,7 +83,7 @@ def write_bins_from_contigs(new_contig_bins, assembly_dict, output_dir):
         with open(output_path, "w") as output_handle:
             SeqIO.write(bin_records, output_handle, "fasta")
 
-        print(f"Written {len(bin_records)} contigs to {output_file}")
+        logger.info(f"Written {len(bin_records)} contigs to {output_file}")
 
 
 
@@ -292,47 +297,6 @@ def calculate_binary_motif_comparison_matrix(motifs_scored_in_bins, args):
     )
     
     return motif_binary_compare
-
-def compare_methylation_pattern(motif_binary_compare, choices):
-    """
-    Compares the methylation pattern between bin and contig motifs and calculates the motif_comparison_score.
-    """
-    # Define the conditions
-    conditions = [
-        (motif_binary_compare["methylation_binary"] == 1)
-        & (motif_binary_compare["methylation_binary_compare"] == 1),
-        (motif_binary_compare["methylation_binary"] == 1)
-        & (motif_binary_compare["methylation_binary_compare"] == 0),
-        (motif_binary_compare["methylation_binary"] == 0)
-        & (motif_binary_compare["methylation_binary_compare"] == 1),
-        (motif_binary_compare["methylation_binary"] == 0)
-        & (motif_binary_compare["methylation_binary_compare"] == 0),
-        (motif_binary_compare["methylation_binary"] == 1)
-        & (motif_binary_compare["methylation_binary_compare"].isna()),
-        (motif_binary_compare["methylation_binary"] == 0)
-        & (motif_binary_compare["methylation_binary_compare"].isna()),
-    ]
-
-
-    # Use numpy.select to apply these conditions and choices
-    motif_binary_compare["motif_comparison_score"] = np.select(
-        conditions, choices, default=np.nan
-    )
-    
-    # sum motif_comparison_score by bin
-    contig_bin_comparison_score = (
-        motif_binary_compare.groupby(["bin", "bin_compare"])["motif_comparison_score"]
-        .sum()
-        .reset_index(name="binary_methylation_missmatch_score")
-    )
-    
-    # Split bin_compare into bin and contig
-    contig_bin_comparison_score[["contig_bin", "contig", "contig_number"]] = contig_bin_comparison_score["bin_compare"].str.split("_", expand=True)
-    contig_bin_comparison_score["contig"] = (contig_bin_comparison_score["contig"] + "_" + contig_bin_comparison_score["contig_number"])
-    contig_bin_comparison_score = contig_bin_comparison_score.drop(columns=["contig_number"])
-    
-    
-    return contig_bin_comparison_score
 
 
 
