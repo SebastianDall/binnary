@@ -220,48 +220,81 @@ def construct_bin_consensus_from_motifs_scored_in_bins(motifs_scored_in_bins, ar
     
     
     # Find n_motifs in bin TODO: rename bin_motifs_from_motifs_scored_in_bins to bin_consensus_from_motifs_scored_in_bins
-    bin_motifs_from_motifs_scored_in_bins = motifs_scored_in_bins[(motifs_scored_in_bins["bin"] != "unbinned")]\
-        .groupby(["bin", "motif_mod"])[["n_mod", "n_nomod"]]\
-        .sum()\
-        .reset_index()
+    bin_consensus_from_motifs_scored_in_bins = motifs_scored_in_bins \
+        .filter(pl.col("bin") != "unbinned") \
+        .group_by(["bin", "motif_mod"]) \
+        .agg(
+            pl.col("n_mod").sum().alias("n_mod"),
+            pl.col("n_nomod").sum().alias("n_nomod")
+        ) \
+        .with_columns((pl.col("n_mod") + pl.col("n_nomod")).alias("n_motifs_bin")) \
+        .filter(pl.col("n_motifs_bin") > args.n_motif_bin_cutoff) \
+        .with_columns((pl.col("n_mod") / pl.col("n_motifs_bin")).alias("mean_methylation"))
+    
+    bin_consensus_from_motifs_scored_in_bins_filtered = bin_consensus_from_motifs_scored_in_bins \
+        .join(bin_consensus_without_ambiguous_motifs, on=["bin", "motif_mod"], how="inner")
+    
+    
+    # bin_motifs_from_motifs_scored_in_bins = motifs_scored_in_bins[(motifs_scored_in_bins["bin"] != "unbinned")]\
+    #     .groupby(["bin", "motif_mod"])[["n_mod", "n_nomod"]]\
+    #     .sum()\
+    #     .reset_index()
 
-    bin_motifs_from_motifs_scored_in_bins["n_motifs_bin"] = bin_motifs_from_motifs_scored_in_bins["n_mod"] + bin_motifs_from_motifs_scored_in_bins["n_nomod"]
+    # bin_motifs_from_motifs_scored_in_bins["n_motifs_bin"] = bin_motifs_from_motifs_scored_in_bins["n_mod"] + bin_motifs_from_motifs_scored_in_bins["n_nomod"]
 
     # Filter motifs that are not observed more than n_motif_bin_cutoff times
-    bin_motifs_from_motifs_scored_in_bins = bin_motifs_from_motifs_scored_in_bins[bin_motifs_from_motifs_scored_in_bins["n_motifs_bin"] > args.n_motif_bin_cutoff] 
+    # bin_motifs_from_motifs_scored_in_bins = bin_motifs_from_motifs_scored_in_bins[bin_motifs_from_motifs_scored_in_bins["n_motifs_bin"] > args.n_motif_bin_cutoff] 
     
     # Calculate mean methylation
-    bin_motifs_from_motifs_scored_in_bins["mean_methylation"] = bin_motifs_from_motifs_scored_in_bins["n_mod"] / bin_motifs_from_motifs_scored_in_bins["n_motifs_bin"]
+    # bin_motifs_from_motifs_scored_in_bins["mean_methylation"] = bin_motifs_from_motifs_scored_in_bins["n_mod"] / bin_motifs_from_motifs_scored_in_bins["n_motifs_bin"]
 
     # retain only motifs found in bin_consensus_without_ambiguous_motifs
-    bin_motifs_from_motifs_scored_in_bins = bin_motifs_from_motifs_scored_in_bins.merge(bin_consensus_without_ambiguous_motifs, on=["bin", "motif_mod"], how="inner")
+    # bin_motifs_from_motifs_scored_in_bins = bin_motifs_from_motifs_scored_in_bins.merge(bin_consensus_without_ambiguous_motifs, on=["bin", "motif_mod"], how="inner")
 
     # Calculate standard deviation of methylation per bin and motif_mod
-    bin_motifs_mean_and_sd = motifs_scored_in_bins[
-        (motifs_scored_in_bins["bin"] != "unbinned") &  
-        (motifs_scored_in_bins["mean"] > 0.1) &                                 # TODO: Remove this line if the negative cases should be used to determine methylation pattern.
-        (motifs_scored_in_bins["n_motifs"] > args.n_motif_contig_cutoff)
-        ] \
-        .groupby(["bin", "motif_mod"]).agg(
-            mean_methylation_bin = pd.NamedAgg(column="mean", aggfunc="mean"),
-            std_methylation_bin = pd.NamedAgg(column="mean", aggfunc="std"),
-            n_contigs = pd.NamedAgg(column="contig", aggfunc="count"),
-        ).reset_index()
+    bin_motifs_mean_and_sd = motifs_scored_in_bins \
+        .filter(
+            (pl.col("bin") != "unbinned") &  
+            (pl.col("mean") > 0.1) &                                 # TODO: Remove this line if the negative cases should be used to determine methylation pattern.
+            (pl.col("n_motifs") > args.n_motif_contig_cutoff)
+        ) \
+        .group_by(["bin", "motif_mod"]) \
+        .agg(
+            pl.col("mean").mean().alias("mean_methylation_bin"),
+            pl.col("mean").std().fill_null(0.15/4).alias("std_methylation_bin"),
+            pl.col("contig").count().alias("n_contigs")
+        ) \
+    
+    
+    
+    # bin_motifs_mean_and_sd = motifs_scored_in_bins[
+    #     (motifs_scored_in_bins["bin"] != "unbinned") &  
+    #     (motifs_scored_in_bins["mean"] > 0.1) &                                 # TODO: Remove this line if the negative cases should be used to determine methylation pattern.
+    #     (motifs_scored_in_bins["n_motifs"] > args.n_motif_contig_cutoff)
+    #     ] \
+    #     .groupby(["bin", "motif_mod"]).agg(
+    #         mean_methylation_bin = pd.NamedAgg(column="mean", aggfunc="mean"),
+    #         std_methylation_bin = pd.NamedAgg(column="mean", aggfunc="std"),
+    #         n_contigs = pd.NamedAgg(column="contig", aggfunc="count"),
+    #     ).reset_index()
 
     # Fill std_methylation_bin with 0.15/4 for bins with only one contig, which will allow the score to be mean-0.15 at most
-    bin_motifs_mean_and_sd["std_methylation_bin"] = bin_motifs_mean_and_sd["std_methylation_bin"].fillna(0.15/4)
+    # bin_motifs_mean_and_sd["std_methylation_bin"] = bin_motifs_mean_and_sd["std_methylation_bin"].fillna(0.15/4)
     
     
     # Merge with bin_motifs_from_motifs_scored_in_bins
-    bin_motifs_from_motifs_scored_in_bins = bin_motifs_from_motifs_scored_in_bins.merge(bin_motifs_mean_and_sd, on=["bin", "motif_mod"], how="left")
+    bin_consensus_from_motifs_scored_in_bins_filtered = bin_consensus_from_motifs_scored_in_bins_filtered.join(bin_motifs_mean_and_sd, on=["bin", "motif_mod"], how="left") \
+        .with_columns((pl.col("mean_methylation") >= args.mean_methylation_cutoff).cast(int).alias("methylation_binary"))
+    
+    # bin_motifs_from_motifs_scored_in_bins = bin_motifs_from_motifs_scored_in_bins.merge(bin_motifs_mean_and_sd, on=["bin", "motif_mod"], how="left")
     
     # TODO: Does this make sense? All motifs with mean_methylation above 0.25 is called as methylated.
     ## Convert mean methylation values to binary
-    bin_motifs_from_motifs_scored_in_bins["methylation_binary"] = (
-        bin_motifs_from_motifs_scored_in_bins["mean_methylation"] >= args.mean_methylation_cutoff
-    ).astype(int)
+    # bin_motifs_from_motifs_scored_in_bins["methylation_binary"] = (
+    #     bin_motifs_from_motifs_scored_in_bins["mean_methylation"] >= args.mean_methylation_cutoff
+    # ).astype(int)
     
-    return bin_motifs_from_motifs_scored_in_bins
+    return bin_consensus_from_motifs_scored_in_bins_filtered
     
 
 def calculate_binary_motif_comparison_matrix(motifs_scored_in_bins, args):
