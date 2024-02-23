@@ -32,17 +32,9 @@ def include_contigs(motifs_scored_in_bins, bin_consensus, contamination, args):
         .select("bin") \
         .unique()["bin"]
     
-    
-    # bins_w_no_methylation = bin_consensus[
-    #     bin_consensus.groupby("bin")["methylation_binary"].transform("sum") == 0
-    # ]["bin"].unique()
-    
+
     bin_consensus = bin_consensus \
         .filter(~pl.col("bin").is_in(bins_w_no_methylation))
-    
-    # bin_consensus = bin_consensus[
-    #     ~bin_consensus["bin"].isin(bins_w_no_methylation)
-    # ]
     
     # Retain only unbinned contigs or contigs in the contamination file
     contigs_for_comparison = motifs_scored_in_bins \
@@ -51,10 +43,7 @@ def include_contigs(motifs_scored_in_bins, bin_consensus, contamination, args):
             (pl.col("bin_contig").is_in(contamination["bin_contig_compare"]))
         )
     
-    # contigs_for_comparison = motifs_scored_in_bins[
-    #     (motifs_scored_in_bins["bin_contig"].str.contains("unbinned")) |  # Retain unbinned contigs
-    #     (motifs_scored_in_bins["bin_contig"].isin(contamination["bin_contig_compare"])) # Retain contigs in the contamination file
-    # ]
+
     
     # Define the corresponding choices for each condition
     choices = [
@@ -67,10 +56,11 @@ def include_contigs(motifs_scored_in_bins, bin_consensus, contamination, args):
     ]
 
     contig_bin_comparison_score, contigs_w_no_methylation = sc.compare_methylation_pattern_multiprocessed(
-        contigs_for_comparison,
-        bin_consensus,
-        choices,
-        args,
+        motifs_scored_in_bins=contigs_for_comparison,
+        bin_consensus=bin_consensus,
+        mode="include",
+        choices=choices,
+        args=args,
         num_processes=args.threads
     )
     
@@ -83,11 +73,12 @@ def include_contigs(motifs_scored_in_bins, bin_consensus, contamination, args):
     
     logger.info("Assigning contigs to bins...")
     # Filter contigs where motif comparisons are less than args.min_motif_comparisons
+    # TODO: looking for 0 comparisons is now redundant. Also remove the column.
     contigs_of_interest = contig_bin_comparison_score \
         .filter(
             pl.col("non_na_comparisons") >= args.min_motif_comparisons,
             (~pl.col("bin_compare").is_in(contigs_w_no_methylation)),  # Remove contigs with no methylation
-            (pl.col("binary_methylation_missmatch_score") == 0)        # Retain contigs with no methylation missmatch
+            (pl.col("binary_methylation_missmatch_score") == 0)        # Retain contigs with no methylation missmatch 
             
         ) \
         .sort("bin","bin_compare")
