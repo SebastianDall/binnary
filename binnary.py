@@ -64,7 +64,7 @@ def main(args):
         contamination = detect_contamination.detect_contamination(
             motifs_scored_in_bins, bin_motifs_from_motifs_scored_in_bins, args
         )
-        data_processing.generate_output(contamination, args.out, "bin_contamination.tsv")
+        data_processing.generate_output(contamination.to_pandas(), args.out, "bin_contamination.tsv")
         
 
     if args.command == "include_contigs":
