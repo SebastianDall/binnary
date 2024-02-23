@@ -141,7 +141,7 @@ def compare_methylation_pattern(motif_binary_compare, choices):
 
 
 def process_bin_contig(bin_contig, bin_motifs_from_motifs_scored_in_bins, motifs_scored_in_contigs, choices):
-    # worker_setup_logging(log_queue)
+    worker_setup_logging(log_queue)
     logger = logging.getLogger(__name__)
     logger.info(f"Processing {bin_contig}")
     
