@@ -13,3 +13,7 @@ def split_bin_contig(df):
         .drop("contig_number")
 
     return df
+
+
+def get_bin(bin_contig):
+    return re.search(r"(.+)_contig_\d+", bin_contig).group(1)

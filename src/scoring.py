@@ -1,5 +1,5 @@
 from src import data_processing as dp
-import numpy as np
+from src import utils as ut
 import polars as pl
 from multiprocessing import Pool, Queue, Process, get_context
 import logging
@@ -103,18 +103,28 @@ def compare_methylation_pattern(motif_binary_compare, choices):
     return contig_bin_comparison_score
 
 
-def process_bin_contig(bin_contig, bin_motifs_from_motifs_scored_in_bins, motifs_scored_in_contigs, choices):
+def process_bin_contig(bin_contig, bin_motifs_from_motifs_scored_in_bins, motifs_scored_in_contigs, mode, choices):
     worker_setup_logging(log_queue)
     logger = logging.getLogger(__name__)
     logger.info(f"Processing {bin_contig}")
     
+    bin = ut.get_bin(bin_contig)
     
-    # Merge motifs based on 'motif_mod'
-    motif_binary_compare = bin_motifs_from_motifs_scored_in_bins.join(
-        motifs_scored_in_contigs.filter(pl.col("bin_compare") == bin_contig),
-        on="motif_mod"
-    )
-
+    if mode == "contamination":
+        motif_binary_compare = bin_motifs_from_motifs_scored_in_bins \
+            .filter(pl.col("bin") == bin) \
+            .join(
+                motifs_scored_in_contigs.filter(pl.col("bin_compare") == bin_contig),
+                on="motif_mod"
+            )
+    if mode == "include":
+        motif_binary_compare = bin_motifs_from_motifs_scored_in_bins \
+            .filter(pl.col("bin") != bin) \
+            .join(
+                motifs_scored_in_contigs.filter(pl.col("bin_compare") == bin_contig),
+                on="motif_mod"
+            )
+    
     # Define methylation thresholds
     motif_binary_compare = define_mean_methylation_thresholds(motif_binary_compare)
 
@@ -122,18 +132,27 @@ def process_bin_contig(bin_contig, bin_motifs_from_motifs_scored_in_bins, motifs
     contig_bin_comparison_score = compare_methylation_pattern(motif_binary_compare, choices)
     
     # Check if the contig has no methylation and note it, but do not exclude it from further processing
-    # contigHasNMethylation = motif_binary_compare["methylation_binary_compare"].sum()
     contigHasNMethylation = motif_binary_compare.filter(pl.col("methylation_binary_compare") == 1).height
     logger.info(f"Finished processing {bin_contig}. Contig has {contigHasNMethylation} positive methylation comparisons.")
     
-    
+    if mode == "include":
+        contig_bin_comparison_score = contig_bin_comparison_score \
+            .filter(
+                pl.col("binary_methylation_missmatch_score") == 0
+            )
+    if mode == "contamination":
+        contig_bin_comparison_score = contig_bin_comparison_score \
+            .filter(
+                pl.col("binary_methylation_missmatch_score") > 0
+            )
+            
+        
     if contigHasNMethylation == 0:
         return contig_bin_comparison_score, bin_contig
     
-    
     return contig_bin_comparison_score, None
 
-def compare_methylation_pattern_multiprocessed(motifs_scored_in_bins, bin_consensus, choices, args, num_processes=1):
+def compare_methylation_pattern_multiprocessed(motifs_scored_in_bins, bin_consensus, choices, mode, args, num_processes=1):
     logger = logging.getLogger(__name__)
     logger.info("Starting comparison of methylation patterns")
     
@@ -150,7 +169,7 @@ def compare_methylation_pattern_multiprocessed(motifs_scored_in_bins, bin_consen
         results = pool.starmap(
             process_bin_contig,
             [
-                (bin_contig, bin_consensus, motifs_scored_in_contigs, choices)
+                (bin_contig, bin_consensus, motifs_scored_in_contigs, mode, choices)
                 for bin_contig in motifs_scored_in_contigs.select("bin_compare").unique().to_pandas()["bin_compare"].tolist()
             ]
         )

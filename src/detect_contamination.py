@@ -37,10 +37,11 @@ def detect_contamination(motifs_scored_in_bins, bin_consensus, args):
     ]
 
     contig_bin_comparison_score, contigs_w_no_methylation = sc.compare_methylation_pattern_multiprocessed(
-        motifs_scored_in_bins_wo_unbinned,
-        bin_consensus,
-        choices,
-        args,
+        motifs_scored_in_bins=motifs_scored_in_bins_wo_unbinned,
+        bin_consensus=bin_consensus,
+        mode="contamination",
+        choices=choices,
+        args=args,
         num_processes=args.threads
     )
 
@@ -62,26 +63,25 @@ def detect_contamination(motifs_scored_in_bins, bin_consensus, args):
     #     (contig_bin_comparison_score["binary_methylation_missmatch_score"] > 0)
     # ]
 
-    logger.info("Finding alternative bin for contamination contigs")
-    # Find alternative bin for contamination contigs
-    ## Must have a perfect match
-    contamination_contigs_alternative_bin = contig_bin_comparison_score \
-        .filter(
-            (pl.col("bin") != pl.col("contig_bin")) &
-            (pl.col("binary_methylation_missmatch_score") == 0) &
-            (~pl.col("bin_compare").is_in(contigs_w_no_methylation))
-        ) \
-        .select(["contig", "bin", "binary_methylation_missmatch_score"]) \
-        .rename(
-            {
-                "bin": "alternative_bin",
-                "binary_methylation_missmatch_score": "alternative_bin_binary_methylation_missmatch_score"
-            }
-        )
+    # logger.info("Finding alternative bin for contamination contigs")
+    # # Find alternative bin for contamination contigs
+    # ## Must have a perfect match
+    # contamination_contigs_alternative_bin = contig_bin_comparison_score \
+    #     .filter(
+    #         (pl.col("bin") != pl.col("contig_bin")) &
+    #         (pl.col("binary_methylation_missmatch_score") == 0) &
+    #         (~pl.col("bin_compare").is_in(contigs_w_no_methylation))
+    #     ) \
+    #     .select(["contig", "bin", "binary_methylation_missmatch_score"]) \
+    #     .rename(
+    #         {
+    #             "bin": "alternative_bin",
+    #             "binary_methylation_missmatch_score": "alternative_bin_binary_methylation_missmatch_score"
+    #         }
+    #     )
     
 
     contamination_contigs = contamination_contigs \
-        .join(contamination_contigs_alternative_bin, on="contig", how="left") \
         .drop("contig_bin") \
             .rename(
                 {
