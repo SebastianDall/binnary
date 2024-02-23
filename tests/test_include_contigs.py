@@ -15,7 +15,7 @@ def test_include_contigs(loaded_data, motifs_scored_in_bins_and_bin_motifs):
     motifs_scored_in_bins = motifs_scored_in_bins_and_bin_motifs["motifs_scored_in_bins"]
     
     
-    bin_motifs_from_motifs_scored_in_bins = dp.construct_bin_motifs_from_motifs_scored_in_bins(
+    bin_motifs_from_motifs_scored_in_bins = dp.construct_bin_consensus_from_motifs_scored_in_bins(
         motifs_scored_in_bins,
         args
     )
@@ -24,7 +24,7 @@ def test_include_contigs(loaded_data, motifs_scored_in_bins_and_bin_motifs):
     
     include_contigs_df = ic.include_contigs(motifs_scored_in_bins, bin_motifs_from_motifs_scored_in_bins, contamination, args)
     
-    print(include_contigs_df)
+    include_contigs_df = include_contigs_df.to_pandas()
     
     assert include_contigs_df is not None
     assert include_contigs_df.shape[0] == 3
@@ -44,7 +44,7 @@ def test_include_with_too_high_min_motif_comparisons(loaded_data, motifs_scored_
     
     
     motifs_scored_in_bins = motifs_scored_in_bins_and_bin_motifs["motifs_scored_in_bins"]
-    bin_motifs_from_motifs_scored_in_bins = dp.construct_bin_motifs_from_motifs_scored_in_bins(
+    bin_motifs_from_motifs_scored_in_bins = dp.construct_bin_consensus_from_motifs_scored_in_bins(
         motifs_scored_in_bins,
         args
     )

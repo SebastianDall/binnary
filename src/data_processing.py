@@ -1,8 +1,10 @@
 import polars as pl
+import pandas as pd
+
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
-import numpy as np
+
 import gzip
 import os
 import logging

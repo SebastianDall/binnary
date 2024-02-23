@@ -1,6 +1,7 @@
 import pytest
 from src import scoring as sc
 from src import data_processing as dp
+import polars as pl
 
 from .conftest import MockArgs
 
@@ -12,10 +13,10 @@ def test_compare_methylation_pattern(loaded_data, motifs_scored_in_bins_and_bin_
     
     args = MockArgs()
     
-    motif_binary_compare = dp.calculate_binary_motif_comparison_matrix(
-        motifs_scored_in_bins[~motifs_scored_in_bins["bin_contig"].str.contains("unbinned")],
-        args
-    )
+    motifs_scored_in_bins = motifs_scored_in_bins \
+        .filter(~pl.col("bin_contig").str.contains("unbinned"))
+    
+    
     
     # Define the corresponding choices for each condition
     choices = [
@@ -27,7 +28,15 @@ def test_compare_methylation_pattern(loaded_data, motifs_scored_in_bins_and_bin_
         0,  # bin motif is not methylated, contig motif is not observed
     ]
     
+    motif_binary_compare = sc.compare_methylation_pattern_multiprocessed(
+        motifs_scored_in_bins,
+        args
+    )
+    
+    
     contig_bin_comparison_score = sc.compare_methylation_pattern(motif_binary_compare, choices)
+    
+    contig_bin_comparison_score = contig_bin_comparison_score.to_pandas()
     
     assert contig_bin_comparison_score is not None
     assert set(contig_bin_comparison_score["bin"].unique()) == {'b1', 'b2', 'b3', 'b4'}

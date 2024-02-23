@@ -89,10 +89,10 @@ def main(args):
         )
         
         # Save the include_contigs_df results
-        data_processing.generate_output(include_contigs_df, args.out, "include_contigs.tsv")
+        data_processing.generate_output(include_contigs_df.to_pandas(), args.out, "include_contigs.tsv")
         
         # Create a new contig_bin file
-        new_contig_bins = data_processing.create_contig_bin_file(contig_bins, include_contigs_df, contamination)
+        new_contig_bins = data_processing.create_contig_bin_file(contig_bins.to_pandas(), include_contigs_df.to_pandas(), contamination.to_pandas())
         data_processing.generate_output(new_contig_bins, args.out, "decontaminated_contig_bins_with_include.tsv")
         
         if args.write_bins:

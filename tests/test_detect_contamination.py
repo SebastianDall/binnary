@@ -3,6 +3,8 @@ from src import detect_contamination
 from src import data_processing as dp
 from .conftest import MockArgs
 
+
+
 def test_detect_contamination(loaded_data, motifs_scored_in_bins_and_bin_motifs):
     """
     GIVEN loaded_data
@@ -24,6 +26,8 @@ def test_detect_contamination(loaded_data, motifs_scored_in_bins_and_bin_motifs)
         bin_motifs_from_motifs_scored_in_bins,
         args
     )
+    
+    contaminated_contigs = contaminated_contigs.to_pandas()
     
     assert contaminated_contigs is not None
     assert contaminated_contigs["bin"].unique().tolist() == ["b3"]
