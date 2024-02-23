@@ -2,6 +2,7 @@ import polars as pl
 import pandas as pd
 from src import data_processing as dp
 from src import scoring as sc
+from src.utils import split_bin_contig
 import logging
 
 def detect_contamination(motifs_scored_in_bins, bin_consensus, args):
@@ -45,15 +46,16 @@ def detect_contamination(motifs_scored_in_bins, bin_consensus, args):
 
     logger.info("Finding contamination in bins")
     
-    bin_compare_column = contig_bin_comparison_score.select("bin_compare").to_pandas()
-    bin_compare_column[["contig_bin", "contig", "contig_number"]] = bin_compare_column["bin_compare"].str.split("_", expand=True)
-    bin_compare_column = bin_compare_column.drop(columns=["contig"]).drop_duplicates()
-    bin_compare_column_pl = pl.DataFrame(bin_compare_column)
+    contig_bin_comparison_score = split_bin_contig(contig_bin_comparison_score)
     
-    contig_bin_comparison_score = contig_bin_comparison_score \
-        .join(bin_compare_column_pl, on="bin_compare", how="left") \
-        .with_columns(("contig_" + pl.col("contig_number")).alias("contig")) \
-        .drop("contig_number")
+    # bin_compare_column = contig_bin_comparison_score.select("bin_compare").to_pandas()
+    # bin_compare_column = split_bin_contig(bin_compare_column)
+    # # bin_compare_column[["contig_bin", "contig", "contig_number"]] = bin_compare_column["bin_compare"].str.split("_", expand=True)
+    # # bin_compare_column = bin_compare_column.drop(columns=["contig"]).drop_duplicates()
+    # bin_compare_column_pl = pl.DataFrame(bin_compare_column)
+    
+    # contig_bin_comparison_score = contig_bin_comparison_score \
+    #     .join(bin_compare_column_pl, on="bin_compare", how="left")
     # 
     
     # split bin_compare column
