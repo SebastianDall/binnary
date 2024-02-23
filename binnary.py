@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
+
+import os
 import sys
 from src import data_processing, detect_contamination, include_contigs
 from src.cli_parser import get_parser
 import logging
 from src.logging import set_logger_config
+
 # Import other necessary libraries here
 
 
@@ -29,6 +32,13 @@ def main(args):
     set_logger_config(args)
     logger = logging.getLogger(__name__)
     logger.info("Starting Binnary analysis...")
+    
+    # Set number of threads for polars
+    os.environ['POLARS_MAX_THREADS'] = str(args.threads)
+    
+    import polars as pl
+    POLAR_THREADS = pl.threadpool_size()
+    logger.info(f"Polars is using {POLAR_THREADS} threads.")
     
     # Step 1: Load and preprocess data
     # These functions would be defined in your data_processing module
