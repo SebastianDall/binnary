@@ -41,9 +41,9 @@ def main(args):
     
 
     # Step 2: create motifs_scored_in_bins and bin_motif_binary
-    bin_motif_binary = data_processing.calculate_binary_methylation_bin_consensus_from_bin_motifs(bin_motifs, args)
+    bin_motif_binary = data_processing.prepare_bin_consensus(bin_motifs, args)
     
-    motifs_in_bin_consensus = bin_motif_binary["motif_mod"].unique()
+    motifs_in_bin_consensus = bin_motif_binary.select("motif_mod").unique()["motif_mod"]
     
     motifs_scored_in_bins = data_processing.prepare_motifs_scored_in_bins(
         motifs_scored,
@@ -54,7 +54,7 @@ def main(args):
     
     # Create the bin_consensus dataframe for scoring
     logger.info("Creating bin_consensus dataframe for scoring...")
-    bin_motifs_from_motifs_scored_in_bins = data_processing.construct_bin_motifs_from_motifs_scored_in_bins(
+    bin_motifs_from_motifs_scored_in_bins = data_processing.construct_bin_consensus_from_motifs_scored_in_bins(
         motifs_scored_in_bins,
         args
     )

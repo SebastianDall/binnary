@@ -123,32 +123,32 @@ def test_bin_motifs_from_motifs_scored_in_bins(loaded_data, motifs_scored_in_bin
     assert bin_motifs_from_motifs_scored_in_bins.columns == ['bin', 'motif_mod', 'n_mod', 'n_nomod', 'n_motifs_bin', 'mean_methylation', 'mean_methylation_bin', 'std_methylation_bin', 'n_contigs', 'methylation_binary']
     
     
-def test_calculate_binary_motif_comparison_matrix(loaded_data, motifs_scored_in_bins_and_bin_motifs):
-    """
-    GIVEN loaded_data and motifs_scored_in_bins_and_bin_motifs
-    WHEN calculate_binary_motif_comparison_matrix is called
-    THEN assert that the output contains only the expected columns
-    """
-    motifs_scored_in_bins = motifs_scored_in_bins_and_bin_motifs["motifs_scored_in_bins"]
+# def test_calculate_binary_motif_comparison_matrix(loaded_data, motifs_scored_in_bins_and_bin_motifs):
+#     """
+#     GIVEN loaded_data and motifs_scored_in_bins_and_bin_motifs
+#     WHEN calculate_binary_motif_comparison_matrix is called
+#     THEN assert that the output contains only the expected columns
+#     """
+#     motifs_scored_in_bins = motifs_scored_in_bins_and_bin_motifs["motifs_scored_in_bins"]
     
-    args = MockArgs()
+#     args = MockArgs()
     
-    motifs_scored_in_bins_filtered = motifs_scored_in_bins \
-        .filter(~pl.col("bin_contig").str.contains("unbinned"))
+#     motifs_scored_in_bins_filtered = motifs_scored_in_bins \
+#         .filter(~pl.col("bin_contig").str.contains("unbinned"))
     
-    motif_binary_compare = data_processing.calculate_binary_motif_comparison_matrix(
-        motifs_scored_in_bins_filtered,
-        args
-    )
+#     motif_binary_compare = data_processing.calculate_binary_motif_comparison_matrix(
+#         motifs_scored_in_bins_filtered,
+#         args
+#     )
     
-    assert motif_binary_compare is not None
-    # Assert that no bin_contig contains "unbinned"
-    assert motif_binary_compare.filter(pl.col("bin_compare").str.contains("unbinned")).is_empty()
+#     assert motif_binary_compare is not None
+#     # Assert that no bin_contig contains "unbinned"
+#     assert motif_binary_compare.filter(pl.col("bin_compare").str.contains("unbinned")).is_empty()
     
-    # b3 = motif_binary_compare[(motif_binary_compare["bin"] == "b3") & (motif_binary_compare["bin_compare"].str.contains("b3"))]
-    b3 = motif_binary_compare.filter((pl.col("bin") == "b3") & (pl.col("bin_compare").str.contains("b3")))
+#     # b3 = motif_binary_compare[(motif_binary_compare["bin"] == "b3") & (motif_binary_compare["bin_compare"].str.contains("b3"))]
+#     b3 = motif_binary_compare.filter((pl.col("bin") == "b3") & (pl.col("bin_compare").str.contains("b3")))
     
-    assert set(b3.to_pandas()["motif_mod"].unique()) == set(["m1_a", "m2_a", "m3_a", "m6_a"])
-    assert b3.filter(pl.col("motif_mod") == "m6_a").select("methylation_binary").get_column("methylation_binary")[0] == 1
-    assert b3.filter(pl.col("motif_mod") == "m2_a").select("methylation_binary").get_column("methylation_binary")[0] == 0
+#     assert set(b3.to_pandas()["motif_mod"].unique()) == set(["m1_a", "m2_a", "m3_a", "m6_a"])
+#     assert b3.filter(pl.col("motif_mod") == "m6_a").select("methylation_binary").get_column("methylation_binary")[0] == 1
+#     assert b3.filter(pl.col("motif_mod") == "m2_a").select("methylation_binary").get_column("methylation_binary")[0] == 0
     

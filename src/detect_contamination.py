@@ -1,5 +1,5 @@
+import polars as pl
 import pandas as pd
-import numpy as np
 from src import data_processing as dp
 from src import scoring as sc
 import logging
@@ -22,7 +22,8 @@ def detect_contamination(motifs_scored_in_bins, bin_consensus, args):
     """
     logger = logging.getLogger(__name__)
     logger.info("Starting contamination detection analysis...")
-    motifs_scored_in_bins_wo_unbinned = motifs_scored_in_bins[~motifs_scored_in_bins["bin_contig"].str.contains("unbinned")]
+    motifs_scored_in_bins_wo_unbinned = motifs_scored_in_bins \
+        .filter(~pl.col("bin_contig").str.contains("unbinned"))
     
     # Define the corresponding choices for each condition
     choices = [
@@ -43,6 +44,14 @@ def detect_contamination(motifs_scored_in_bins, bin_consensus, args):
     )
 
     logger.info("Finding contamination in bins")
+    
+    # split bin_compare column
+    contig_bin_comparison_score = contig_bin_comparison_score.to_pandas()
+    print(contig_bin_comparison_score.columns)
+    
+    contig_bin_comparison_score[["contig_bin", "contig", "contig_number"]] = contig_bin_comparison_score["bin_compare"].str.split("_", expand=True)
+    contig_bin_comparison_score["contig"] = (contig_bin_comparison_score["contig"] + "_" + contig_bin_comparison_score["contig_number"])
+    contig_bin_comparison_score = contig_bin_comparison_score.drop(columns=["contig_number"])
     
     # Filter contig_bin == bin and contig_bin_comparison_score > 0
     contamination_contigs = contig_bin_comparison_score[
