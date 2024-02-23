@@ -184,35 +184,36 @@ def compare_methylation_pattern_multiprocessed(motifs_scored_in_bins, bin_consen
         .select(["bin_contig", "motif_mod", "mean"]) \
         .rename({"bin_contig": "bin_compare"})
     
-    # motifs_scored_in_contigs = motifs_scored_in_bins[motifs_scored_in_bins["n_motifs"] >= args.n_motif_contig_cutoff]
-    # motifs_scored_in_contigs = motifs_scored_in_contigs[["bin_contig", "motif_mod", "mean"]]
-    # motifs_scored_in_contigs.rename(columns={"bin_contig": "bin_compare"}, inplace=True)
 
     comparison_score = pl.DataFrame()
     contigs_w_no_methylation = []
 
-    # with get_context("fork").Pool(processes=num_processes) as pool:
-    #     results = pool.starmap(
-    #         process_bin_contig,
-    #         [
-    #             (bin_contig, bin_consensus, motifs_scored_in_contigs, choices)
-    #             for bin_contig in motifs_scored_in_contigs.select("bin_compare").unique().to_pandas()["bin_compare"].tolist()
-    #         ]
-    #     )
-    for bin_contig in motifs_scored_in_contigs.select("bin_compare").unique().to_pandas()["bin_compare"].tolist():
-        result, no_methylation = process_bin_contig(bin_contig, bin_consensus, motifs_scored_in_contigs, choices)
+    with get_context("spawn").Pool(processes=num_processes) as pool:
+        results = pool.starmap(
+            process_bin_contig,
+            [
+                (bin_contig, bin_consensus, motifs_scored_in_contigs, choices)
+                for bin_contig in motifs_scored_in_contigs.select("bin_compare").unique().to_pandas()["bin_compare"].tolist()
+            ]
+        )
+        
+    for result, no_methylation in results:
         if result is not None:
             comparison_score = pl.concat([comparison_score, result])
         if no_methylation is not None:
             contigs_w_no_methylation.append(no_methylation)
         
-    
-
-    # for result, no_methylation in results:
+    # for loop implementation
+    # for bin_contig in motifs_scored_in_contigs.select("bin_compare").unique().to_pandas()["bin_compare"].tolist():
+    #     result, no_methylation = process_bin_contig(bin_contig, bin_consensus, motifs_scored_in_contigs, choices)
     #     if result is not None:
     #         comparison_score = pl.concat([comparison_score, result])
     #     if no_methylation is not None:
     #         contigs_w_no_methylation.append(no_methylation)
+        
+    
+
+
 
     return comparison_score, contigs_w_no_methylation
 
