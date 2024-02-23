@@ -78,31 +78,31 @@ def include_contigs(motifs_scored_in_bins, bin_consensus, contamination, args):
     
     dp.generate_output(contig_bin_comparison_score.to_pandas(), args.out, "motif_binary_comparison.tsv")
     
+    
+    
+    
+    logger.info("Assigning contigs to bins...")
     # Filter contigs where motif comparisons are less than args.min_motif_comparisons
     contigs_of_interest = contig_bin_comparison_score \
         .filter(
             pl.col("non_na_comparisons") >= args.min_motif_comparisons,
-            (~pl.col("bin_compare").is_in(contigs_w_no_methylation)) &  # Remove contigs with no methylation
-            (pl.col("binary_methylation_missmatch_score") == 0)#,        # Retain contigs with no methylation missmatch
-            # pl.col("contig").is_unique()
+            (~pl.col("bin_compare").is_in(contigs_w_no_methylation)),  # Remove contigs with no methylation
+            (pl.col("binary_methylation_missmatch_score") == 0)        # Retain contigs with no methylation missmatch
+            
         ) \
         .sort("bin","bin_compare")
-        
     
     
-    # contig_bin_comparison_score = contig_bin_comparison_score[
-    #     contig_bin_comparison_score["non_na_comparisons"] >= args.min_motif_comparisons
-    # ]
+    single_contigs = contigs_of_interest \
+        .group_by("contig") \
+        .agg(
+            pl.count("contig").alias("contig_count")
+        ) \
+        .filter(pl.col("contig_count") == 1)
     
-    
-    logger.info("Assigning contigs to bins...")
-    
-    # contigs_of_interest = contig_bin_comparison_score[
-    #     (~contig_bin_comparison_score["bin_compare"].isin(contigs_w_no_methylation)) &  # Remove contigs with no methylation
-    #     (contig_bin_comparison_score["binary_methylation_missmatch_score"] == 0)        # Retain contigs with no methylation missmatch   
-    # ].drop_duplicates(subset=["contig"], keep=False)                        # Remove duplicate contigs
-    
-    # sort by bin
-    # contigs_of_interest = contigs_of_interest.sort_values(by=["bin", "bin_compare"])
+    contigs_of_interest = contigs_of_interest \
+        .filter(pl.col("contig").is_in(single_contigs["contig"]))
+      
+
     logger.info("Finished include_contigs analysis.")
     return contigs_of_interest
