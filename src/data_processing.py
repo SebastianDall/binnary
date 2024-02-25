@@ -113,7 +113,7 @@ def prepare_bin_consensus(bin_motifs, args):
     Prepares the bin_consensus_from_bin_motifs DataFrame by calculating the mean methylation per bin and motif_mod and converting it to binary.    
     """
     # Combine 'motif' and 'mod_type' into 'motif_mod'
-    bin_motifs = bin_motifs.with_columns((pl.col("motif") + "_" + pl.col("mod_type")).alias("motif_mod"))
+    bin_motifs = bin_motifs.with_columns((pl.col("motif") + "_" + pl.col("mod_type") + "-" + pl.col("mod_position").cast(pl.Utf8)).alias("motif_mod"))
 
     # Calculate total motifs and mean methylation
     bin_motifs = bin_motifs.with_columns([
@@ -165,7 +165,7 @@ def prepare_motifs_scored_in_bins(motifs_scored, motifs_of_interest, contig_bins
     # Filter and enhance motifs_scored based on motifs_in_bins
     motifs_scored_in_bins = motifs_scored \
         .with_columns(
-            (pl.col("motif") + "_" + pl.col("mod_type")).alias("motif_mod"),
+            (pl.col("motif") + "_" + pl.col("mod_type") + "-" + pl.col("mod_position").cast(pl.Utf8)).alias("motif_mod"),
             (pl.col("n_mod") + pl.col("n_nomod")).alias("n_motifs")
         ) \
         .filter(pl.col("motif_mod").is_in(motifs_of_interest)) \
