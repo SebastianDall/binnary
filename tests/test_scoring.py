@@ -51,7 +51,7 @@ def test_compare_methylation_pattern_contamination(loaded_data, motifs_scored_in
     # assert contig_bin_comparison_score[(contig_bin_comparison_score["bin"] == "b2") & (contig_bin_comparison_score["contig"] == "contig_4")]["binary_methylation_missmatch_score"].values[0] == 0
     
 
-def test_compare_methylation_pattern_contamination(loaded_data, motifs_scored_in_bins_and_bin_motifs):
+def test_compare_methylation_pattern_include(loaded_data, motifs_scored_in_bins_and_bin_motifs):
     """
     
     """
@@ -91,6 +91,6 @@ def test_compare_methylation_pattern_contamination(loaded_data, motifs_scored_in
     contig_bin_comparison_score = contig_bin_comparison_score.to_pandas()
     
     assert contig_bin_comparison_score is not None
-    assert set(contig_bin_comparison_score["bin"].unique()) =={'b2', 'b3', 'b4'} 
-    assert len(contig_bin_comparison_score["contig"].unique()) == 4
+    assert set(contig_bin_comparison_score["bin"].unique()) =={'b2', 'b3'} 
+    assert len(contig_bin_comparison_score["contig"].unique()) == 2
     
