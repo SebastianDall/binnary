@@ -38,14 +38,14 @@ def test_prepare_bin_consensus(loaded_data):
     assert bin_motif_binary is not None
     assert bin_motif_binary.columns == ["bin", "motif_mod", "mean_methylation", "methylation_binary"]
     
-    assert bin_motif_binary.filter((pl.col("bin") == "b3") & (pl.col("motif_mod") == "m6_a")).select("methylation_binary").item() == 1
+    assert bin_motif_binary.filter((pl.col("bin") == "b3") & (pl.col("motif_mod") == "m6_a-1")).select("methylation_binary").item() == 1
     
     # Assert that there are 4 motifs in bin 1
     assert bin_motif_binary.filter(pl.col("bin") == "b3").height == 4
-    assert set(bin_motif_binary.filter(pl.col("bin") == "b3").to_pandas()["motif_mod"].to_list()) == {"m1_a", "m2_a", "m3_a", "m6_a"}
+    assert set(bin_motif_binary.filter(pl.col("bin") == "b3").to_pandas()["motif_mod"].to_list()) == {"m1_a-1", "m2_a-1", "m3_a-1", "m6_a-1"}
     
     # Assert m7_a is filtered because of too few observations
-    assert bin_motif_binary.filter(pl.col("motif_mod") == "m7_a").is_empty()
+    assert bin_motif_binary.filter(pl.col("motif_mod") == "m7_a-1").is_empty()
     
 
 
