@@ -37,7 +37,7 @@ def loaded_data():
         "contig_bins": contig_bins
     }
     
-    
+
 @pytest.fixture(scope="session")
 def motifs_scored_in_bins_and_bin_motifs(loaded_data):
     args = MockArgs()
@@ -47,9 +47,9 @@ def motifs_scored_in_bins_and_bin_motifs(loaded_data):
     bin_motifs = loaded_data["bin_motifs"]
     contig_bins = loaded_data["contig_bins"]
     
-    bin_motif_binary = data_processing.calculate_binary_methylation_bin_consensus_from_bin_motifs(bin_motifs, args)
+    bin_motif_binary = data_processing.prepare_bin_consensus(bin_motifs, args)
     
-    motifs_in_bins = bin_motif_binary["motif_mod"].unique()
+    motifs_in_bins = bin_motif_binary.select("motif_mod").unique()["motif_mod"]
     
     # Step 2: create motifs_scored_in_bins
     motifs_scored_in_bins = data_processing.prepare_motifs_scored_in_bins(

@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
+
+import os
 import sys
 from src import data_processing, detect_contamination, include_contigs
 from src.cli_parser import get_parser
 import logging
 from src.logging import set_logger_config
+
 # Import other necessary libraries here
 
 
@@ -30,6 +33,13 @@ def main(args):
     logger = logging.getLogger(__name__)
     logger.info("Starting Binnary analysis...")
     
+    # Set number of threads for polars
+    os.environ['POLARS_MAX_THREADS'] = str(args.threads)
+    
+    import polars as pl
+    POLAR_THREADS = pl.threadpool_size()
+    logger.info(f"Polars is using {POLAR_THREADS} threads.")
+    
     # Step 1: Load and preprocess data
     # These functions would be defined in your data_processing module
     (
@@ -41,9 +51,9 @@ def main(args):
     
 
     # Step 2: create motifs_scored_in_bins and bin_motif_binary
-    bin_motif_binary = data_processing.calculate_binary_methylation_bin_consensus_from_bin_motifs(bin_motifs, args)
+    bin_motif_binary = data_processing.prepare_bin_consensus(bin_motifs, args)
     
-    motifs_in_bin_consensus = bin_motif_binary["motif_mod"].unique()
+    motifs_in_bin_consensus = bin_motif_binary.select("motif_mod").unique()["motif_mod"]
     
     motifs_scored_in_bins = data_processing.prepare_motifs_scored_in_bins(
         motifs_scored,
@@ -54,7 +64,7 @@ def main(args):
     
     # Create the bin_consensus dataframe for scoring
     logger.info("Creating bin_consensus dataframe for scoring...")
-    bin_motifs_from_motifs_scored_in_bins = data_processing.construct_bin_motifs_from_motifs_scored_in_bins(
+    bin_motifs_from_motifs_scored_in_bins = data_processing.construct_bin_consensus_from_motifs_scored_in_bins(
         motifs_scored_in_bins,
         args
     )
@@ -64,7 +74,7 @@ def main(args):
         contamination = detect_contamination.detect_contamination(
             motifs_scored_in_bins, bin_motifs_from_motifs_scored_in_bins, args
         )
-        data_processing.generate_output(contamination, args.out, "bin_contamination.tsv")
+        data_processing.generate_output(contamination.to_pandas(), args.out, "bin_contamination.tsv")
         
 
     if args.command == "include_contigs":
@@ -79,10 +89,10 @@ def main(args):
         )
         
         # Save the include_contigs_df results
-        data_processing.generate_output(include_contigs_df, args.out, "include_contigs.tsv")
+        data_processing.generate_output(include_contigs_df.to_pandas(), args.out, "include_contigs.tsv")
         
         # Create a new contig_bin file
-        new_contig_bins = data_processing.create_contig_bin_file(contig_bins, include_contigs_df, contamination)
+        new_contig_bins = data_processing.create_contig_bin_file(contig_bins.to_pandas(), include_contigs_df.to_pandas(), contamination.to_pandas())
         data_processing.generate_output(new_contig_bins, args.out, "decontaminated_contig_bins_with_include.tsv")
         
         if args.write_bins:
