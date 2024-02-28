@@ -323,17 +323,13 @@ def load_contamination_file(contamination_file):
     """
     Load the contamination file from the provided path.
     """
-    contamination = pd.read_csv(contamination_file, delimiter = "\t")
+    contamination = pl.read_csv(contamination_file, separator= "\t")
     
     # Check if the file contains the required columns
     # bin	bin_contig_compare	binary_methylation_missmatch_score	contig	alternative_bin	alternative_bin_binary_methylation_missmatch_score
-    required_columns = ["bin", "bin_contig_compare", "binary_methylation_missmatch_score", "contig", "alternative_bin", "alternative_bin_binary_methylation_missmatch_score"]
+    required_columns = ["bin", "bin_contig_compare", "binary_methylation_missmatch_score", "non_na_comparisons", "contig"]
     if not all(column in contamination.columns for column in required_columns):
         raise ValueError("The contamination file does not contain the required columns.")
-    
-    # Check if the file contains any rows
-    if len(contamination) == 0:
-        raise ValueError("The contamination file is empty.")
     
     return contamination
 

@@ -1,8 +1,12 @@
 analysis/
 data/PaPr00000216MP*
+data/data
 output/
 .vscode/
 tests/test_output/
+scripts/
+logs/
+.snakemake/
 
 R
 output.tsv
