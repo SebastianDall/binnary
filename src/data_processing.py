@@ -331,10 +331,6 @@ def load_contamination_file(contamination_file):
     if not all(column in contamination.columns for column in required_columns):
         raise ValueError("The contamination file does not contain the required columns.")
     
-    # Check if the file contains any rows
-    if len(contamination) == 0:
-        raise ValueError("The contamination file is empty.")
-    
     return contamination
 
 
