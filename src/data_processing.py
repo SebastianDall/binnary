@@ -323,7 +323,7 @@ def load_contamination_file(contamination_file):
     """
     Load the contamination file from the provided path.
     """
-    contamination = pd.read_csv(contamination_file, delimiter = "\t")
+    contamination = pl.read_csv(contamination_file, separator= "\t")
     
     # Check if the file contains the required columns
     # bin	bin_contig_compare	binary_methylation_missmatch_score	contig	alternative_bin	alternative_bin_binary_methylation_missmatch_score
