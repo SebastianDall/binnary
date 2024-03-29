@@ -56,16 +56,18 @@ def test_load_contamination_file(loaded_data, motifs_scored_in_bins_and_bin_moti
         args
     )
     
-    contaminated_contigs = contaminated_contigs.to_pandas().to_csv("contaminated_contigs.csv", index=False)
+    contaminated_contigs = contaminated_contigs.to_pandas().to_csv("./tests/contaminated_contigs.tsv", index=False,sep="\t")
     
     # test
     
-    contamination_file = dp.load_contamination_file("contaminated_contigs.csv")
+    contamination_file = dp.load_contamination_file("./tests/contaminated_contigs.tsv")
     required_columns = ["bin", "bin_contig_compare", "binary_methylation_missmatch_score", "non_na_comparisons", "contig"]
+    
+    contamination_file = contamination_file.to_pandas()
     
     assert not contamination_file.empty, "The contamination file should not be empty."
     assert list(contamination_file.columns) == required_columns, "The contamination file columns are incorrect."
     
-    os.remove("contaminated_contigs.csv")
+    os.remove("./tests/contaminated_contigs.tsv")
     
     
